@@ -79,7 +79,7 @@ function initProps (vm: Component, propsOptions: Object) {
     if (process.env.NODE_ENV !== 'production') {
       const hyphenatedKey = hyphenate(key)
       if (isReservedAttribute(hyphenatedKey) ||
-          config.isReservedAttr(hyphenatedKey)) {
+        config.isReservedAttr(hyphenatedKey)) {
         warn(
           `"${hyphenatedKey}" is a reserved attribute and cannot be used as component prop.`,
           vm
@@ -144,14 +144,17 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
-      proxy(vm, `_data`, key)
+      proxy(vm, `_data`, key) // 循环data所有属性，映射到Vue实例上，
+      // 就无需使用 app._data.xxx来访问属性
+      // 而是直接使用app.data访问
     }
   }
   // observe data
-  observe(data, true /* asRootData */)
+  observe(data, true /* asRootData */) // 响应式化
 }
 
 function getData (data: Function, vm: Component): any {
+  // 新版本修复了相关问题 #7573 disable dep collection, when invoking data getters
   try {
     return data.call(vm, vm)
   } catch (e) {
@@ -224,7 +227,7 @@ export function defineComputed (
       : noop
   }
   if (process.env.NODE_ENV !== 'production' &&
-      sharedPropertyDefinition.set === noop) {
+    sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
       warn(
         `Computed property "${key}" was assigned to but it has no setter.`,
@@ -275,6 +278,7 @@ function initMethods (vm: Component, methods: Object) {
       }
     }
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm)
+    // 将methods 属性中的方法绑定上下文后挂载到vue实例上
   }
 }
 
