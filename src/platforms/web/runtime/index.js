@@ -1,3 +1,13 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:54
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-28 16:25:07
+ * @FilePath: \vue\src\platforms\web\runtime\index.js
+ * @Description:
+ * 1.配置__patch__
+ * 2.定义原始$mount方法
+ */
 /* @flow */
 
 import Vue from 'core/index'
@@ -31,9 +41,11 @@ extend(Vue.options.directives, platformDirectives)
 extend(Vue.options.components, platformComponents)
 
 // install platform patch function
-Vue.prototype.__patch__ = inBrowser ? patch : noop
+// 使用虚拟DOM更新真正的DOM的核心算法
+Vue.prototype.__patch__ = inBrowser ? patch : noop // noop 无操作
 
 // public mount method
+// 原始的$mount方法，调用挂载的组件的方法
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean

@@ -10,10 +10,12 @@ import { initLifecycle, callHook } from './lifecycle'
 import { initProvide, initInjections } from './inject'
 import { extend, mergeOptions, formatComponentName } from '../util/index'
 
+// 每个类型的实例都有一个唯一值
 let uid = 0
 
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
+    /* 当前Vue实例 */
     const vm: Component = this
     // a uid
     vm._uid = uid++
