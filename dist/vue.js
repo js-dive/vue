@@ -3173,8 +3173,10 @@ function proxy (target, sourceKey, key) {
 function initState (vm) {
   vm._watchers = [];
   var opts = vm.$options;
+  // 处理options.props的成员，一般定义组件的时候，用于定义对外的成员，初学少用，其处理逻辑与data 类似
   if (opts.props) { initProps(vm, opts.props); }
   if (opts.methods) { initMethods(vm, opts.methods); }
+  // 响应式化data
   if (opts.data) {
     initData(vm);
   } else {
@@ -3224,7 +3226,7 @@ function initProps (vm, propsOptions) {
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
-      proxy(vm, "_props", key);
+      proxy(vm, "_props", key); // 将_props 上的成员映射到Vue实例上，是的不需要app._props.xxx 来方法，直接使用app.xxx来访问
     }
   };
 
@@ -4249,10 +4251,10 @@ function initRender (vm) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
-  vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };
+  vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };// 系统创建元素
   // normalization is always applied for the public version, used in
   // user-written render functions.
-  vm.$createElement = function (a, b, c, d) { return createElement(vm, a, b, c, d, true); };
+  vm.$createElement = function (a, b, c, d) { return createElement(vm, a, b, c, d, true); }; // 用户提供了option.render（函数）属性时创建元素的方法。如果手动提供了 option.render 就不会触发扩展的$mount 方法去生成render
 
   // $attrs & $listeners are exposed for easier HOC creation.
   // they need to be reactive so that HOCs using them are always updated
@@ -4349,14 +4351,6 @@ function initMixin (Vue) {
     // a uid
     vm._uid = uid$1++;
 
-    var startTag, endTag;
-    /* istanbul ignore if */
-    if ("development" !== 'production' && config.performance && mark) {
-      startTag = "vue-perf-start:" + (vm._uid);
-      endTag = "vue-perf-end:" + (vm._uid);
-      mark(startTag);
-    }
-
     // a flag to avoid this being observed
     vm._isVue = true;
     // merge options
@@ -4366,7 +4360,7 @@ function initMixin (Vue) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options);
     } else {
-      vm.$options = mergeOptions(
+      vm.$options = mergeOptions( // 合并，为option增加属性
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm
@@ -4378,24 +4372,21 @@ function initMixin (Vue) {
     }
     // expose real self
     vm._self = vm;
-    initLifecycle(vm);
-    initEvents(vm);
-    initRender(vm);
-    callHook(vm, 'beforeCreate');
-    initInjections(vm); // resolve injections before data/props
-    initState(vm);
+    initLifecycle(vm);// 初始化生命周期的一些状态变量
+    initEvents(vm);// 初始化事件的容器
+    initRender(vm);// 初始化创建元素的方法
+    callHook(vm, 'beforeCreate');// 调用生命周期函数
+    initInjections(vm); // resolve injections before data/props //初始化注入器略
+    initState(vm);     // 重点，初始化状态数据( data，property 等)
     initProvide(vm); // resolve provide after data/props
-    callHook(vm, 'created');
-
-    /* istanbul ignore if */
-    if ("development" !== 'production' && config.performance && mark) {
-      vm._name = formatComponentName(vm, false);
-      mark(endTag);
-      measure(("vue " + (vm._name) + " init"), startTag, endTag);
-    }
-
+    callHook(vm, 'created');// 生命周期函数的调用
+    // 上方是组件的创建
     if (vm.$options.el) {
       vm.$mount(vm.$options.el);
+      // 创建完成后进行挂载
+      // 会先调用扩展的那个$mount 方法，生成render
+      // 再调用原始的$mount 方法，获得元素，再调用mountComponent方法
+      // 这两个方法都定义在platforms/web 里面
     }
   };
 }
@@ -10370,6 +10361,8 @@ var idToTemplate = cached(function (id) {
   return el && el.innerHTML
 });
 
+// 将原始的$mount 存储起来，然后实现了新的$moute
+// 然后再调用$mount 就是在扩展原有的$mount 方法
 var mount = Vue$3.prototype.$mount;
 Vue$3.prototype.$mount = function (
   el,
@@ -10417,7 +10410,7 @@ Vue$3.prototype.$mount = function (
       if ("development" !== 'production' && config.performance && mark) {
         mark('compile');
       }
-
+      // 这里就是 生成带有缓存功能的函数，该函数用 于生成虚拟DON
       var ref = compileToFunctions(template, {
         shouldDecodeNewlines: shouldDecodeNewlines,
         delimiters: options.delimiters,

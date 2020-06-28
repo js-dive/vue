@@ -48,8 +48,10 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 处理options.props的成员，一般定义组件的时候，用于定义对外的成员，初学少用，其处理逻辑与data 类似
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
+  // 响应式化data
   if (opts.data) {
     initData(vm)
   } else {
@@ -95,13 +97,13 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
-      defineReactive(props, key, value)
+      defineReactive(props, key, value) // 属性响应式化
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
-      proxy(vm, `_props`, key)
+      proxy(vm, `_props`, key) // 将_props 上的成员映射到Vue实例上，是的不需要app._props.xxx 来方法，直接使用app.xxx来访问
     }
   }
   observerState.shouldConvert = true

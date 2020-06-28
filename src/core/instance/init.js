@@ -20,14 +20,6 @@ export function initMixin (Vue: Class<Component>) {
     // a uid
     vm._uid = uid++
 
-    let startTag, endTag
-    /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      startTag = `vue-perf-start:${vm._uid}`
-      endTag = `vue-perf-end:${vm._uid}`
-      mark(startTag)
-    }
-
     // a flag to avoid this being observed
     vm._isVue = true
     // merge options
@@ -37,7 +29,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
-      vm.$options = mergeOptions(
+      vm.$options = mergeOptions( // 合并，为option增加属性
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm
@@ -51,24 +43,21 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
-    initLifecycle(vm)
-    initEvents(vm)
-    initRender(vm)
-    callHook(vm, 'beforeCreate')
-    initInjections(vm) // resolve injections before data/props
-    initState(vm)
+    initLifecycle(vm)// 初始化生命周期的一些状态变量
+    initEvents(vm)// 初始化事件的容器
+    initRender(vm)// 初始化创建元素的方法
+    callHook(vm, 'beforeCreate')// 调用生命周期函数
+    initInjections(vm) // resolve injections before data/props //初始化注入器略
+    initState(vm)     // 重点，初始化状态数据( data，property 等)
     initProvide(vm) // resolve provide after data/props
-    callHook(vm, 'created')
-
-    /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      vm._name = formatComponentName(vm, false)
-      mark(endTag)
-      measure(`vue ${vm._name} init`, startTag, endTag)
-    }
-
+    callHook(vm, 'created')// 生命周期函数的调用
+    // 上方是组件的创建
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
+      // 创建完成后进行挂载
+      // 会先调用扩展的那个$mount 方法，生成render
+      // 再调用原始的$mount 方法，获得元素，再调用mountComponent方法
+      // 这两个方法都定义在platforms/web 里面
     }
   }
 }
