@@ -2981,7 +2981,7 @@ function queueWatcher (watcher) {
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-30 00:09:56
+ * @LastEditTime: 2020-06-30 00:22:23
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -3079,9 +3079,9 @@ Watcher.prototype.addDep = function addDep (dep) {
   var id = dep.id;
   if (!this.newDepIds.has(id)) {
     this.newDepIds.add(id);
-    this.newDeps.push(dep);
+    this.newDeps.push(dep); // 让watcher关联到dep
     if (!this.depIds.has(id)) {
-      dep.addSub(this);
+      dep.addSub(this); // 让dep关联到watcher
     }
   }
 };
@@ -3095,7 +3095,7 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
   var i = this.deps.length;
   while (i--) {
     var dep = this$1.deps[i];
-    if (!this$1.newDepIds.has(dep.id)) {
+    if (!this$1.newDepIds.has(dep.id)) { // 在二次提交中归档就是让旧的deps 和新的 newDeps-致
       dep.removeSub(this$1);
     }
   }
@@ -3104,7 +3104,7 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
   this.newDepIds = tmp;
   this.newDepIds.clear();
   tmp = this.deps;
-  this.deps = this.newDeps;
+  this.deps = this.newDeps; // 同步处理
   this.newDeps = tmp;
   this.newDeps.length = 0;
 };
@@ -3115,22 +3115,24 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
  */
 Watcher.prototype.update = function update () {
   /* istanbul ignore else */
-  if (this.lazy) {
+  if (this.lazy) { // 主要针对计算属性，一 般用于求值计算
     this.dirty = true;
-  } else if (this.sync) {
+  } else if (this.sync) { // 同步，主要用于SSR，同步就表示立即计算
     this.run();
   } else {
-    queueWatcher(this);
+    queueWatcher(this); // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this . run(),
   }
 };
 
 /**
  * Scheduler job interface.
  * Will be called by the scheduler.
+ * 调用get求值或渲染，如果求值，新旧值不同，触发cb
  */
 Watcher.prototype.run = function run () {
   if (this.active) {
-    var value = this.get();
+    var value = this.get(); // 要么渲染，要么求值
+    // 如果值不一样，触发cb
     if (
       value !== this.value ||
       // Deep watchers and watchers on Object/Arrays should fire even
@@ -3197,11 +3199,6 @@ Watcher.prototype.teardown = function teardown () {
   }
 };
 
-/**
- * Recursively traverse an object to evoke all converted
- * getters, so that every nested property inside the object
- * is collected as a "deep" dependency.
- */
 var seenObjects = new _Set();
 function traverse (val) {
   seenObjects.clear();

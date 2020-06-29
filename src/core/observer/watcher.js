@@ -2,7 +2,7 @@
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-30 00:09:56
+ * @LastEditTime: 2020-06-30 00:22:23
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -33,7 +33,7 @@ let uid = 0
 export default class Watcher {
   vm: Component;
   expression: string; // 关联表达式或渲染方法体
-  cb: Function;// 回调函数
+  cb: Function; // 在定义Vue 构造函数的时候，传入的watch函数体（值发生变化时的回调函数，function(nVal,oVal){}）
   id: number;
   deep: boolean;
   user: boolean;
@@ -55,7 +55,7 @@ export default class Watcher {
   newDepIds: ISet;
 
   // 旧版本（2.5.0）里没有
-  // before: ?Function; //在定义Vue 构造函数的时候，传入的watch函数体（值发生变化时的回调函数，function(nVal,oVal){}）
+  // before: ?Function; // Watcher触发之前的，类似于生命周期
 
   getter: Function; // 就是渲染函数(模板或组件的渲染)或计算函数(watch) // 计算函数，watch中的对象路径'a,b,c'写法
   value: any;// 如果是渲染函数，value 无效;如果是计算属性，就会有一个值，值就存储在value 中
@@ -146,9 +146,9 @@ export default class Watcher {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
-      this.newDeps.push(dep)
+      this.newDeps.push(dep) // 让watcher关联到dep
       if (!this.depIds.has(id)) {
-        dep.addSub(this)
+        dep.addSub(this) // 让dep关联到watcher
       }
     }
   }
@@ -160,7 +160,7 @@ export default class Watcher {
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
-      if (!this.newDepIds.has(dep.id)) {
+      if (!this.newDepIds.has(dep.id)) { // 在二次提交中归档就是让旧的deps 和新的 newDeps-致
         dep.removeSub(this)
       }
     }
@@ -169,7 +169,7 @@ export default class Watcher {
     this.newDepIds = tmp
     this.newDepIds.clear()
     tmp = this.deps
-    this.deps = this.newDeps
+    this.deps = this.newDeps // 同步处理
     this.newDeps = tmp
     this.newDeps.length = 0
   }
@@ -180,22 +180,24 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
-    if (this.lazy) {
+    if (this.lazy) { // 主要针对计算属性，一 般用于求值计算
       this.dirty = true
-    } else if (this.sync) {
+    } else if (this.sync) { // 同步，主要用于SSR，同步就表示立即计算
       this.run()
     } else {
-      queueWatcher(this)
+      queueWatcher(this) // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this . run(),
     }
   }
 
   /**
    * Scheduler job interface.
    * Will be called by the scheduler.
+   * 调用get求值或渲染，如果求值，新旧值不同，触发cb
    */
   run () {
     if (this.active) {
-      const value = this.get()
+      const value = this.get() // 要么渲染，要么求值
+      // 如果值不一样，触发cb
       if (
         value !== this.value ||
         // Deep watchers and watchers on Object/Arrays should fire even
