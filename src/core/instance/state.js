@@ -53,7 +53,7 @@ export function initState (vm: Component) {
   if (opts.methods) initMethods(vm, opts.methods)
   // 响应式化data
   if (opts.data) {
-    initData(vm)
+    initData(vm) // ~自上次提交后大致告一段落over
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
