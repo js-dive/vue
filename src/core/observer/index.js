@@ -2,7 +2,7 @@
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 22:08:04
+ * @LastEditTime: 2020-06-29 23:11:29
  * @FilePath: \vue\src\core\observer\index.js
  * @Description:Observer类，observe的工厂函数.
  * traverse.js递归遍历响应式数据.目的是触发依赖收集.
@@ -158,6 +158,7 @@ export function defineReactive (
 ) {
   const dep = new Dep()
 
+  // 获得对象属性描述符
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
@@ -172,10 +173,11 @@ export function defineReactive (
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
-      const value = getter ? getter.call(obj) : val
+      const value = getter ? getter.call(obj) : val // 保证了如果已经定义的get方法可以被继承下来，不会丢失
       if (Dep.target) {
-        dep.depend()
+        dep.depend() // 关联的当前属性
         if (childOb) {
+          // 收集子属性
           childOb.dep.depend()
           if (Array.isArray(value)) {
             dependArray(value)
@@ -187,6 +189,7 @@ export function defineReactive (
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 若数据无变化，就不会派发更新
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -195,12 +198,12 @@ export function defineReactive (
         customSetter()
       }
       if (setter) {
-        setter.call(obj, newVal)
+        setter.call(obj, newVal) // 保证了如果已经定义的set方法可以被继承下来，不会丢失
       } else {
         val = newVal
       }
-      childOb = !shallow && observe(newVal)
-      dep.notify()
+      childOb = !shallow && observe(newVal) // 对新值进行响应式化
+      dep.notify() // 派发更新
     }
   })
 }
