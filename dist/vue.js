@@ -789,7 +789,7 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:22:47
+ * @LastEditTime: 2020-06-29 21:38:24
  * @FilePath: \vue\src\core\observer\dep.js
  * @Description:Dep类
  */
@@ -821,7 +821,10 @@ Dep.prototype.depend = function depend () {
     Dep.target.addDep(this);
   }
 };
-
+/**
+*每一个属性都会包含一个dep实例
+*这个dep实例会记录下参与计算或渲染的watcher
+*/
 Dep.prototype.notify = function notify () {
   // stabilize the subscriber list first
   var subs = this.subs.slice();
@@ -990,7 +993,7 @@ var arrayMethods = Object.create(arrayProto);[
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:26:23
+ * @LastEditTime: 2020-06-29 22:08:04
  * @FilePath: \vue\src\core\observer\index.js
  * @Description:Observer类，observe的工厂函数.
  * traverse.js递归遍历响应式数据.目的是触发依赖收集.
@@ -1020,15 +1023,18 @@ var Observer = function Observer (value) {
   this.value = value;
   this.dep = new Dep();
   this.vmCount = 0;
-  def(value, '__ob__', this);
+  def(value, '__ob__', this); // 技巧:逻辑上等价于value.__ob__ = this
+
+  // 真正响应式化的逻辑
   if (Array.isArray(value)) {
+    // 判断浏览器是否兼容__proto__
     var augment = hasProto
       ? protoAugment
       : copyAugment;
     augment(value, arrayMethods, arrayKeys);
-    this.observeArray(value);
+    this.observeArray(value); // 遍历数组的元素，进行递归observe
   } else {
-    this.walk(value);
+    this.walk(value); // 遍历对象的属性，递归observe
   }
 };
 
@@ -1058,16 +1064,18 @@ Observer.prototype.observeArray = function observeArray (items) {
 /**
  * Augment an target Object or Array by intercepting
  * the prototype chain using __proto__
+ * 浏览器支持__proto__
  */
 function protoAugment (target, src, keys) {
   /* eslint-disable no-proto */
-  target.__proto__ = src;
+  target.__proto__ = src; // 完成数组原型链修改 从而使得数组变成响应式的 pop, push, shift, unshift,
   /* eslint-enable no-proto */
 }
 
 /**
  * Augment an target Object or Array by defining
  * hidden properties.
+ * 浏览器不支持__proto__ 就将这些方法直接混入到当前数组中，属性访问元素
  */
 /* istanbul ignore next */
 function copyAugment (target, src, keys) {
@@ -1081,6 +1089,11 @@ function copyAugment (target, src, keys) {
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ * 传入数据变为响应式对象
+ * 算法描述:
+ * -先看对象是否含有 _ob__ ，并且是Observer 的实例( Vue中响应式对象的标记)
+ * -有,忽略
+ * -没有，调用new Observer( value )。进行响应式化
  */
 function observe (value, asRootData) {
   if (!isObject(value) || value instanceof VNode) {
