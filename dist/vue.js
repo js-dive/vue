@@ -430,7 +430,7 @@ var config = ({
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:33:31
+ * @LastEditTime: 2020-06-30 00:04:26
  * @FilePath: \vue\src\core\util\lang.js
  * @Description:
  */
@@ -463,7 +463,7 @@ function def (obj, key, val, enumerable) {
 /**
  * Parse simple path.
  */
-var bailRE = /[^\w.$]/;
+var bailRE = /[^\w.$]/;  // 用于匹配xx.xx.xx.x
 function parsePath (path) {
   if (bailRE.test(path)) {
     return
@@ -2981,7 +2981,7 @@ function queueWatcher (watcher) {
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:26:43
+ * @LastEditTime: 2020-06-30 00:09:56
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -3022,12 +3022,12 @@ var Watcher = function Watcher (
   this.newDepIds = new _Set();
   this.expression = expOrFn.toString();
   // parse expression for getter
-  if (typeof expOrFn === 'function') {
+  if (typeof expOrFn === 'function') { // watch前面那个key，如果找到了是函数，就是render 函数
     this.getter = expOrFn;
   } else {
-    this.getter = parsePath(expOrFn);
+    this.getter = parsePath(expOrFn); // 找不到的话需要去解析路径看一看
     if (!this.getter) {
-      this.getter = function () {};
+      this.getter = function () { };
       "development" !== 'production' && warn(
         "Failed watching path: \"" + expOrFn + "\" " +
         'Watcher only accepts simple dot-delimited paths. ' +
@@ -3036,6 +3036,7 @@ var Watcher = function Watcher (
       );
     }
   }
+  // 如果是lazy就什么也不做，否则就立即调用getter 函数求值( expOrFn )
   this.value = this.lazy
     ? undefined
     : this.get();
@@ -3045,6 +3046,7 @@ var Watcher = function Watcher (
  * Evaluate the getter, and re-collect dependencies.
  */
 Watcher.prototype.get = function get () {
+  // 执行前把watcher放到全局作用域
   pushTarget(this);
   var value;
   var vm = this.vm;
@@ -3062,7 +3064,9 @@ Watcher.prototype.get = function get () {
     if (this.deep) {
       traverse(value);
     }
+  // 执行后把watcher从全局作用域移除
     popTarget();
+    // "清空"关联的dep数据
     this.cleanupDeps();
   }
   return value
@@ -3193,6 +3197,11 @@ Watcher.prototype.teardown = function teardown () {
   }
 };
 
+/**
+ * Recursively traverse an object to evoke all converted
+ * getters, so that every nested property inside the object
+ * is collected as a "deep" dependency.
+ */
 var seenObjects = new _Set();
 function traverse (val) {
   seenObjects.clear();

@@ -2,7 +2,7 @@
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:26:43
+ * @LastEditTime: 2020-06-30 00:09:56
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -32,21 +32,33 @@ let uid = 0
  */
 export default class Watcher {
   vm: Component;
-  expression: string;
-  cb: Function;
+  expression: string; // 关联表达式或渲染方法体
+  cb: Function;// 回调函数
   id: number;
   deep: boolean;
   user: boolean;
-  lazy: boolean;
+  lazy: boolean;// 计算属性，和watch 来控制不要让Watcher 立即执行
   sync: boolean;
   dirty: boolean;
   active: boolean;
+
+  // 在Vue中使用了二次提交的概念
+  // 每次在数据渲染或计算的时候就会访问响应式的数据，就会进行依赖收集
+  // 就将关联的Watcher 与dep相关联,
+  // 在数据发生变化的时候，根据dep找到关联的watcher, 依次调用update
+  // 执行完成后会清空watcher
+
   deps: Array<Dep>;
-  newDeps: Array<Dep>;
   depIds: ISet;
+
+  newDeps: Array<Dep>;
   newDepIds: ISet;
-  getter: Function;
-  value: any;
+
+  // 旧版本（2.5.0）里没有
+  // before: ?Function; //在定义Vue 构造函数的时候，传入的watch函数体（值发生变化时的回调函数，function(nVal,oVal){}）
+
+  getter: Function; // 就是渲染函数(模板或组件的渲染)或计算函数(watch) // 计算函数，watch中的对象路径'a,b,c'写法
+  value: any;// 如果是渲染函数，value 无效;如果是计算属性，就会有一个值，值就存储在value 中
 
   constructor (
     vm: Component,
@@ -77,12 +89,12 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
-    if (typeof expOrFn === 'function') {
+    if (typeof expOrFn === 'function') { // watch前面那个key，如果找到了是函数，就是render 函数
       this.getter = expOrFn
     } else {
-      this.getter = parsePath(expOrFn)
+      this.getter = parsePath(expOrFn) // 找不到的话需要去解析路径看一看
       if (!this.getter) {
-        this.getter = function () {}
+        this.getter = function () { }
         process.env.NODE_ENV !== 'production' && warn(
           `Failed watching path: "${expOrFn}" ` +
           'Watcher only accepts simple dot-delimited paths. ' +
@@ -91,6 +103,7 @@ export default class Watcher {
         )
       }
     }
+    // 如果是lazy就什么也不做，否则就立即调用getter 函数求值( expOrFn )
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -100,6 +113,7 @@ export default class Watcher {
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
+    // 执行前把watcher放到全局作用域
     pushTarget(this)
     let value
     const vm = this.vm
@@ -117,7 +131,9 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+    // 执行后把watcher从全局作用域移除
       popTarget()
+      // "清空"关联的dep数据
       this.cleanupDeps()
     }
     return value

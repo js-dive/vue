@@ -2,7 +2,7 @@
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:33:31
+ * @LastEditTime: 2020-06-30 00:04:26
  * @FilePath: \vue\src\core\util\lang.js
  * @Description:
  */
@@ -35,7 +35,7 @@ export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
 /**
  * Parse simple path.
  */
-const bailRE = /[^\w.$]/
+const bailRE = /[^\w.$]/  // 用于匹配xx.xx.xx.x
 export function parsePath (path: string): any {
   if (bailRE.test(path)) {
     return
