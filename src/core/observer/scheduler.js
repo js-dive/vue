@@ -1,3 +1,12 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:24:40
+ * @FilePath: \vue\src\core\observer\scheduler.js
+ * @Description:vue中的任务调度的工具，watcher执行的核心
+ */
+
 /* @flow */
 
 import type Watcher from './watcher'

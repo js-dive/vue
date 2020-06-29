@@ -1,3 +1,12 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:26:43
+ * @FilePath: \vue\src\core\observer\watcher.js
+ * @Description:Watcher类
+ */
+
 /* @flow */
 
 import { queueWatcher } from './scheduler'

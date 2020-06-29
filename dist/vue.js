@@ -426,6 +426,14 @@ var config = ({
   _lifecycleHooks: LIFECYCLE_HOOKS
 });
 
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:33:31
+ * @FilePath: \vue\src\core\util\lang.js
+ * @Description:
+ */
 /*  */
 
 var emptyObject = Object.freeze({});
@@ -440,6 +448,8 @@ function isReserved (str) {
 
 /**
  * Define a property.
+ * 使用参数，将可枚举性变为可控的；递归，使用循环，获得key时，不可枚举属性是访问不到的
+ * 在vue中实例存在大量的循环引用，递归遍历对象成员的时候，避免死递归
  */
 function def (obj, key, val, enumerable) {
   Object.defineProperty(obj, key, {
@@ -775,6 +785,15 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   }());
 }
 
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:22:47
+ * @FilePath: \vue\src\core\observer\dep.js
+ * @Description:Dep类
+ */
+
 /*  */
 
 
@@ -919,6 +938,14 @@ function cloneVNodes (vnodes, deep) {
 }
 
 /*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:35:11
+ * @FilePath: \vue\src\core\observer\array.js
+ * @Description:重写数组方法，创建含有重写数组方法的数组，让所有的响应式数据数组继承自该数组
+ */
+/*
  * not type checking this file because flow doesn't play well with
  * dynamically accessing methods on Array prototype
  */
@@ -958,6 +985,16 @@ var arrayMethods = Object.create(arrayProto);[
     return result
   });
 });
+
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:26:23
+ * @FilePath: \vue\src\core\observer\index.js
+ * @Description:Observer类，observe的工厂函数.
+ * traverse.js递归遍历响应式数据.目的是触发依赖收集.
+ */
 
 /*  */
 
@@ -2775,6 +2812,15 @@ function callHook (vm, hook) {
   }
 }
 
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:24:40
+ * @FilePath: \vue\src\core\observer\scheduler.js
+ * @Description:vue中的任务调度的工具，watcher执行的核心
+ */
+
 /*  */
 
 
@@ -2914,6 +2960,15 @@ function queueWatcher (watcher) {
     }
   }
 }
+
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:26:43
+ * @FilePath: \vue\src\core\observer\watcher.js
+ * @Description:Watcher类
+ */
 
 /*  */
 
@@ -3236,8 +3291,9 @@ function initProps (vm, propsOptions) {
 
 function initData (vm) {
   var data = vm.$options.data;
+  // 将data挂载到实例的_data上
   data = vm._data = typeof data === 'function'
-    ? getData(data, vm)
+    ? getData(data, vm) // 调用函数，获得返回值，计算data
     : data || {};
   if (!isPlainObject(data)) {
     data = {};
@@ -3254,6 +3310,7 @@ function initData (vm) {
   var i = keys.length;
   while (i--) {
     var key = keys[i];
+    /** 这里判断只是为了避免props, data, method 等数据发生冲突，同名的问题*/
     {
       if (methods && hasOwn(methods, key)) {
         warn(

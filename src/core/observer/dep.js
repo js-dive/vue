@@ -1,3 +1,12 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:22:47
+ * @FilePath: \vue\src\core\observer\dep.js
+ * @Description:Dep类
+ */
+
 /* @flow */
 
 import type Watcher from './watcher'

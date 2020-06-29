@@ -1,3 +1,13 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 21:26:23
+ * @FilePath: \vue\src\core\observer\index.js
+ * @Description:Observer类，observe的工厂函数.
+ * traverse.js递归遍历响应式数据.目的是触发依赖收集.
+ */
+
 /* @flow */
 
 import Dep from './dep'

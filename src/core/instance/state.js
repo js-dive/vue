@@ -111,8 +111,9 @@ function initProps (vm: Component, propsOptions: Object) {
 
 function initData (vm: Component) {
   let data = vm.$options.data
+  // 将data挂载到实例的_data上
   data = vm._data = typeof data === 'function'
-    ? getData(data, vm)
+    ? getData(data, vm) // 调用函数，获得返回值，计算data
     : data || {}
   if (!isPlainObject(data)) {
     data = {}
@@ -129,6 +130,7 @@ function initData (vm: Component) {
   let i = keys.length
   while (i--) {
     const key = keys[i]
+    /** 这里判断只是为了避免props, data, method 等数据发生冲突，同名的问题*/
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
