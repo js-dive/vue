@@ -215,8 +215,8 @@ export function defineComputed (
   const shouldCache = !isServerRendering()
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
-      ? createComputedGetter(key)
-      : userDef
+      ? createComputedGetter(key) // 浏览器中触发的情况
+      : userDef // 新版本中此处是 createGetterInvoker( userDef ) 服务端渲染的时候触发，里面直接计算，不会涉及到watcher处理
     sharedPropertyDefinition.set = noop
   } else {
     sharedPropertyDefinition.get = userDef.get
@@ -240,6 +240,7 @@ export function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+// 浏览器中出发的情况，里面会对数据的访问关联一个watcher
 function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
@@ -311,6 +312,7 @@ function createWatcher (
     handler = vm[handler]
   }
   return vm.$watch(keyOrFn, handler, options)
+  // new 了一个Watcher？？
 }
 
 export function stateMixin (Vue: Class<Component>) {
