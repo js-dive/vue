@@ -628,6 +628,13 @@ export function createPatchFunction (backend) {
     }
   }
 
+  // !!! 据说其它都是工具函数直接看这里
+  // 二次提交的逻辑
+  // 每次数据更新->生成新的虚拟DOM-> diff旧的虚拟DOM（与真实DOM一一对应）-> 更新旧的虚拟DOM -> 同步真的DOM
+  // looseEqual？
+  // 分而治之，每一个虚拟DOM都和页面中的DOM一一对应
+  // 我们只需要将VNode与DOMNode 建立一个更新的关系
+  // 递归触发每一个虚拟DOM的update,来更新对应的真的DOM的数据
   return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
