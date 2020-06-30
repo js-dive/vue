@@ -140,6 +140,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+//
 export function mountComponent (
   vm: Component,
   el: ?Element,
@@ -189,10 +190,13 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      // _render用于生成虚拟DOM
+      // update 内部调用patch 方法将虚拟DOM与真实的DOM同步 (diff算法)
       vm._update(vm._render(), hydrating)
     }
   }
 
+  // 渲染Watcher初始化完后，调用下方生命周期函数mounted
   vm._watcher = new Watcher(vm, updateComponent, noop)
   hydrating = false
 
