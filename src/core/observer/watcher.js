@@ -2,7 +2,7 @@
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-30 00:22:23
+ * @LastEditTime: 2020-07-01 00:24:36
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -179,6 +179,7 @@ export default class Watcher {
    * Will be called when a dependency changes.
    */
   update () {
+    // 本质就是调用run方法
     /* istanbul ignore else */
     if (this.lazy) { // 主要针对计算属性，一 般用于求值计算
       this.dirty = true
@@ -186,6 +187,7 @@ export default class Watcher {
       this.run()
     } else {
       queueWatcher(this) // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this . run(),
+      // 转到相关定义，可发现是在 -- 循环调用run方法
     }
   }
 
