@@ -695,6 +695,7 @@ var nextTick = (function () {
     }
   }
 
+  // nextTick兼容处理
   // An asynchronous deferring mechanism.
   // In pre 2.4, we used to use microtasks (Promise/MutationObserver)
   // but microtasks actually has too high a priority and fires in between
@@ -2111,11 +2112,16 @@ function simpleNormalizeChildren (children) {
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
 function normalizeChildren (children) {
-  return isPrimitive(children)
-    ? [createTextVNode(children)]
-    : Array.isArray(children)
-      ? normalizeArrayChildren(children)
-      : undefined
+  if (isPrimitive(children)) {
+    debugger
+    return [createTextVNode(children)]
+  }
+  if (Array.isArray(children)) {
+    debugger
+    return normalizeArrayChildren(children)
+  }
+  debugger
+  return undefined
 }
 
 function isTextNode (node) {
@@ -2641,6 +2647,7 @@ function lifecycleMixin (Vue) {
   };
 }
 
+//
 function mountComponent (
   vm,
   el,
@@ -2690,10 +2697,13 @@ function mountComponent (
     };
   } else {
     updateComponent = function () {
+      // _render用于生成虚拟DOM
+      // update 内部调用patch 方法将虚拟DOM与真实的DOM同步 (diff算法)
       vm._update(vm._render(), hydrating);
     };
   }
 
+  // 渲染Watcher初始化完后，调用下方生命周期函数mounted
   vm._watcher = new Watcher(vm, updateComponent, noop);
   hydrating = false;
 
@@ -2832,9 +2842,10 @@ function callHook (vm, hook) {
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-29 21:24:40
+ * @LastEditTime: 2020-07-01 00:26:01
  * @FilePath: \vue\src\core\observer\scheduler.js
  * @Description:vue中的任务调度的工具，watcher执行的核心
+ * 据说这东西在jQuery的.ready()里也有体现
  */
 
 /*  */
@@ -2842,16 +2853,23 @@ function callHook (vm, hook) {
 
 var MAX_UPDATE_COUNT = 100;
 
+// Watcher队列，可简单理解为事件队列 -- 宏任务、微任务
 var queue = [];
 var activatedChildren = [];
 var has = {};
 var circular = {};
+
+// 异步触发未开始，类似setTimeout还未执行
 var waiting = false;
+
+// 开始渲染，清空队列，执行队列中的 watcher 的 run
 var flushing = false;
+
 var index = 0;
 
 /**
  * Reset the scheduler's state.
+ * 清空队列
  */
 function resetSchedulerState () {
   index = queue.length = activatedChildren.length = 0;
@@ -2864,6 +2882,7 @@ function resetSchedulerState () {
 
 /**
  * Flush both queues and run the watchers.
+ * //
  */
 function flushSchedulerQueue () {
   flushing = true;
@@ -2885,7 +2904,7 @@ function flushSchedulerQueue () {
     watcher = queue[index];
     id = watcher.id;
     has[id] = null;
-    watcher.run();
+    watcher.run(); // 循环调用QueueWatcher里的 run方法
     // in dev build, check and stop circular updates.
     if ("development" !== 'production' && has[id] != null) {
       circular[id] = (circular[id] || 0) + 1;
@@ -2972,7 +2991,8 @@ function queueWatcher (watcher) {
     // queue the flush
     if (!waiting) {
       waiting = true;
-      nextTick(flushSchedulerQueue);
+      nextTick(flushSchedulerQueue); // 让任务队列中的watcher在“下一次事件循环”（宏任务的话就是下一次事件循环）中触发
+                                    // 不阻塞当前的处理逻辑
     }
   }
 }
@@ -2981,7 +3001,7 @@ function queueWatcher (watcher) {
  * @Author: gogoend
  * @Date: 2020-02-02 01:34:53
  * @LastEditors: gogoend
- * @LastEditTime: 2020-06-30 00:22:23
+ * @LastEditTime: 2020-07-01 00:24:36
  * @FilePath: \vue\src\core\observer\watcher.js
  * @Description:Watcher类
  */
@@ -3114,6 +3134,7 @@ Watcher.prototype.cleanupDeps = function cleanupDeps () {
  * Will be called when a dependency changes.
  */
 Watcher.prototype.update = function update () {
+  // 本质就是调用run方法
   /* istanbul ignore else */
   if (this.lazy) { // 主要针对计算属性，一 般用于求值计算
     this.dirty = true;
@@ -3121,6 +3142,7 @@ Watcher.prototype.update = function update () {
     this.run();
   } else {
     queueWatcher(this); // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this . run(),
+    // 转到相关定义，可发现是在 -- 循环调用run方法
   }
 };
 
@@ -3417,8 +3439,8 @@ function defineComputed (
   var shouldCache = !isServerRendering();
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
-      ? createComputedGetter(key)
-      : userDef;
+      ? createComputedGetter(key) // 浏览器中触发的情况
+      : userDef; // 新版本中此处是 createGetterInvoker( userDef ) 服务端渲染的时候触发，里面直接计算，不会涉及到watcher处理
     sharedPropertyDefinition.set = noop;
   } else {
     sharedPropertyDefinition.get = userDef.get
@@ -3442,6 +3464,7 @@ function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition);
 }
 
+// 浏览器中出发的情况，里面会对数据的访问关联一个watcher
 function createComputedGetter (key) {
   return function computedGetter () {
     var watcher = this._computedWatchers && this._computedWatchers[key];
@@ -3513,6 +3536,7 @@ function createWatcher (
     handler = vm[handler];
   }
   return vm.$watch(keyOrFn, handler, options)
+  // new 了一个Watcher？？
 }
 
 function stateMixin (Vue) {
@@ -4387,6 +4411,8 @@ function renderMixin (Vue) {
     // render self
     var vnode;
     try {
+      // debugger
+      // vm._renderProxy是实例；这里相当于调用实例option上的render方法，参数为vm.$createElement（用于创建vnode）函数
       vnode = render.call(vm._renderProxy, vm.$createElement);
     } catch (e) {
       handleError(e, vm, "render");
@@ -5856,6 +5882,13 @@ function createPatchFunction (backend) {
     }
   }
 
+  // !!! 据说其它都是工具函数直接看这里
+  // 二次提交的逻辑
+  // 每次数据更新->生成新的虚拟DOM-> diff旧的虚拟DOM（与真实DOM一一对应）-> 更新旧的虚拟DOM -> 同步真的DOM
+  // looseEqual？
+  // 分而治之，每一个虚拟DOM都和页面中的DOM一一对应
+  // 我们只需要将VNode与DOMNode 建立一个更新的关系
+  // 递归触发每一个虚拟DOM的update,来更新对应的真的DOM的数据
   return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) { invokeDestroyHook(oldVnode); }

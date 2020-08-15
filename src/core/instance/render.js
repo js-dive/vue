@@ -80,6 +80,8 @@ export function renderMixin (Vue: Class<Component>) {
     // render self
     let vnode
     try {
+      // debugger
+      // vm._renderProxy是实例；这里相当于调用实例option上的render方法，参数为vm.$createElement（用于创建vnode）函数
       vnode = render.call(vm._renderProxy, vm.$createElement)
     } catch (e) {
       handleError(e, vm, `render`)
