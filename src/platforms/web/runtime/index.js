@@ -42,7 +42,7 @@ extend(Vue.options.components, platformComponents)
 
 // install platform patch function
 // 使用虚拟DOM更新真正的DOM的核心算法
-Vue.prototype.__patch__ = inBrowser ? patch : noop // noop 无操作
+Vue.prototype.__patch__ = inBrowser ? patch : noop // 仅在浏览器端有操作，其他环境下 noop 无操作
 
 // public mount method
 // 原始的$mount方法，调用挂载的组件的方法

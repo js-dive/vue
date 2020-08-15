@@ -71,7 +71,7 @@ export function createPatchFunction (backend) {
   const cbs = {}
 
   const { modules, nodeOps } = backend
-
+  // 收集钩子函数？？
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
@@ -104,7 +104,13 @@ export function createPatchFunction (backend) {
   }
 
   let inPre = 0
-  function createElm (vnode, insertedVnodeQueue, parentElm, refElm, nested) {
+  function createElm (
+    vnode,
+    insertedVnodeQueue,
+    parentElm,
+    refElm,
+    nested
+    ) {
     vnode.isRootInsert = !nested // for transition enter check
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
@@ -113,7 +119,7 @@ export function createPatchFunction (backend) {
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
-    if (isDef(tag)) {
+    if (isDef(tag)) { // 判断节点标签：dom节点 || 文本节点、注释节点
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
           inPre++
@@ -145,32 +151,16 @@ export function createPatchFunction (backend) {
       setScope(vnode)
 
       /* istanbul ignore if */
-      if (__WEEX__) {
-        // in Weex, the default insertion order is parent-first.
-        // List items can be optimized to use children-first insertion
-        // with append="tree".
-        const appendAsTree = isDef(data) && isTrue(data.appendAsTree)
-        if (!appendAsTree) {
-          if (isDef(data)) {
-            invokeCreateHooks(vnode, insertedVnodeQueue)
-          }
-          insert(parentElm, vnode.elm, refElm)
-        }
-        createChildren(vnode, children, insertedVnodeQueue)
-        if (appendAsTree) {
-          if (isDef(data)) {
-            invokeCreateHooks(vnode, insertedVnodeQueue)
-          }
-          insert(parentElm, vnode.elm, refElm)
-        }
-      } else {
+      // 先插入子节点，后插入父节点
+      {
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+  // 插入：父节点 当前vode节点 参考节点
+        debugger
         insert(parentElm, vnode.elm, refElm)
       }
-
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         inPre--
       }
@@ -259,6 +249,7 @@ export function createPatchFunction (backend) {
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
       for (let i = 0; i < children.length; ++i) {
+        // 递归调用子节点 createElm，层层插入
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true)
       }
     } else if (isPrimitive(vnode.text)) {
@@ -649,6 +640,7 @@ export function createPatchFunction (backend) {
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue, parentElm, refElm)
     } else {
+      // 首次渲染，传入的oldVnode是真实DOM
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
@@ -658,11 +650,11 @@ export function createPatchFunction (backend) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
-          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) { // SSR 跳过
             oldVnode.removeAttribute(SSR_ATTR)
             hydrating = true
           }
-          if (isTrue(hydrating)) {
+          if (isTrue(hydrating)) { // 先跳过
             if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
               invokeInsertHook(vnode, insertedVnodeQueue, true)
               return oldVnode
@@ -678,12 +670,13 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
-          oldVnode = emptyNodeAt(oldVnode)
+          oldVnode = emptyNodeAt(oldVnode) // 真实DOM转VNode
         }
+        debugger
         // replacing existing element
         const oldElm = oldVnode.elm
         const parentElm = nodeOps.parentNode(oldElm)
-        createElm(
+        createElm( // VNode挂载到真实DOM
           vnode,
           insertedVnodeQueue,
           // extremely rare edge case: do not insert if old element is in a

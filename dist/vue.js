@@ -2567,6 +2567,7 @@ function lifecycleMixin (Vue) {
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     if (!prevVnode) {
+      // 首次渲染
       // initial render
       vm.$el = vm.__patch__(
         vm.$el, vnode, hydrating, false /* removeOnly */,
@@ -2577,6 +2578,7 @@ function lifecycleMixin (Vue) {
       // this prevents keeping a detached DOM tree in memory (#5851)
       vm.$options._parentElm = vm.$options._refElm = null;
     } else {
+      // 非首次渲染，更新
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode);
     }
@@ -5341,7 +5343,7 @@ function createPatchFunction (backend) {
 
   var modules = backend.modules;
   var nodeOps = backend.nodeOps;
-
+  // 收集钩子函数？？
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = [];
     for (j = 0; j < modules.length; ++j) {
@@ -5374,7 +5376,13 @@ function createPatchFunction (backend) {
   }
 
   var inPre = 0;
-  function createElm (vnode, insertedVnodeQueue, parentElm, refElm, nested) {
+  function createElm (
+    vnode,
+    insertedVnodeQueue,
+    parentElm,
+    refElm,
+    nested
+    ) {
     vnode.isRootInsert = !nested; // for transition enter check
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
@@ -5383,7 +5391,7 @@ function createPatchFunction (backend) {
     var data = vnode.data;
     var children = vnode.children;
     var tag = vnode.tag;
-    if (isDef(tag)) {
+    if (isDef(tag)) { // 判断节点标签：dom节点 || 文本节点、注释节点
       {
         if (data && data.pre) {
           inPre++;
@@ -5415,14 +5423,16 @@ function createPatchFunction (backend) {
       setScope(vnode);
 
       /* istanbul ignore if */
+      // 先插入子节点，后插入父节点
       {
         createChildren(vnode, children, insertedVnodeQueue);
         if (isDef(data)) {
           invokeCreateHooks(vnode, insertedVnodeQueue);
         }
+  // 插入：父节点 当前vode节点 参考节点
+        debugger
         insert(parentElm, vnode.elm, refElm);
       }
-
       if ("development" !== 'production' && data && data.pre) {
         inPre--;
       }
@@ -5511,6 +5521,7 @@ function createPatchFunction (backend) {
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
       for (var i = 0; i < children.length; ++i) {
+        // 递归调用子节点 createElm，层层插入
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true);
       }
     } else if (isPrimitive(vnode.text)) {
@@ -5903,6 +5914,7 @@ function createPatchFunction (backend) {
       isInitialPatch = true;
       createElm(vnode, insertedVnodeQueue, parentElm, refElm);
     } else {
+      // 首次渲染，传入的oldVnode是真实DOM
       var isRealElement = isDef(oldVnode.nodeType);
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
@@ -5912,11 +5924,11 @@ function createPatchFunction (backend) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
-          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) { // SSR 跳过
             oldVnode.removeAttribute(SSR_ATTR);
             hydrating = true;
           }
-          if (isTrue(hydrating)) {
+          if (isTrue(hydrating)) { // 先跳过
             if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
               invokeInsertHook(vnode, insertedVnodeQueue, true);
               return oldVnode
@@ -5932,12 +5944,13 @@ function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
-          oldVnode = emptyNodeAt(oldVnode);
+          oldVnode = emptyNodeAt(oldVnode); // 真实DOM转VNode
         }
+        debugger
         // replacing existing element
         var oldElm = oldVnode.elm;
         var parentElm$1 = nodeOps.parentNode(oldElm);
-        createElm(
+        createElm( // VNode挂载到真实DOM
           vnode,
           insertedVnodeQueue,
           // extremely rare edge case: do not insert if old element is in a
@@ -8226,7 +8239,7 @@ extend(Vue$3.options.components, platformComponents);
 
 // install platform patch function
 // 使用虚拟DOM更新真正的DOM的核心算法
-Vue$3.prototype.__patch__ = inBrowser ? patch : noop; // noop 无操作
+Vue$3.prototype.__patch__ = inBrowser ? patch : noop; // 仅在浏览器端有操作，其他环境下 noop 无操作
 
 // public mount method
 // 原始的$mount方法，调用挂载的组件的方法
