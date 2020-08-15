@@ -5424,13 +5424,15 @@ function createPatchFunction (backend) {
 
       /* istanbul ignore if */
       // 先插入子节点，后插入父节点
+      // eslint-disable-next-line no-lone-blocks
       {
         createChildren(vnode, children, insertedVnodeQueue);
         if (isDef(data)) {
+          // 调用所有的create钩子，同时把 vnode push 到 insertedVnodeQueue 中
           invokeCreateHooks(vnode, insertedVnodeQueue);
         }
   // 插入：父节点 当前vode节点 参考节点
-        debugger
+        // debugger
         insert(parentElm, vnode.elm, refElm);
       }
       if ("development" !== 'production' && data && data.pre) {
@@ -5901,6 +5903,7 @@ function createPatchFunction (backend) {
   // 我们只需要将VNode与DOMNode 建立一个更新的关系
   // 递归触发每一个虚拟DOM的update,来更新对应的真的DOM的数据
   return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
+    debugger
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) { invokeDestroyHook(oldVnode); }
       return
@@ -5946,7 +5949,7 @@ function createPatchFunction (backend) {
           // create an empty node and replace it
           oldVnode = emptyNodeAt(oldVnode); // 真实DOM转VNode
         }
-        debugger
+        // debugger
         // replacing existing element
         var oldElm = oldVnode.elm;
         var parentElm$1 = nodeOps.parentNode(oldElm);

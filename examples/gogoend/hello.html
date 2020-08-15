@@ -1,0 +1,38 @@
+<!--
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 23:51:00
+ * @FilePath: \vue\examples\modal\index.html
+ * @Description: 
+--> 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>CreateElement 函数</title>
+    <!-- Delete ".min" for console warnings in development -->
+    <script src="../../dist/vue.js"></script>
+  </head>
+  <body>
+
+    <div id="app">
+    </div>
+
+    <script>
+      a = new Vue({
+        el: '#app',
+        data: {
+          message: 'hello world'
+        },
+        render (createElement) {
+          return createElement('div', {
+            attrs: {
+              id: 'app'
+            }
+          }, this.message)
+        }
+      })
+    </script>
+  </body>
+</html>
