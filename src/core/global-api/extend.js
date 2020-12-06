@@ -39,12 +39,13 @@ export function initExtend (Vue: GlobalAPI) {
     const Sub = function VueComponent (options) {
       this._init(options)
     }
+    // 原型继承
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
     Sub.options = mergeOptions(
-      Super.options,
-      extendOptions
+      Super.options, // Vue（父类？？）原有的options （类似全局的指令，过滤器？？）
+      extendOptions // 扩展的option
     )
     Sub['super'] = Super
 

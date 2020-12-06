@@ -94,6 +94,7 @@ const componentVNodeHooks = {
   }
 }
 
+// 要合并的钩子在这里，即 componentVNodeHooks 对象中的键
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 export function createComponent (
@@ -107,8 +108,10 @@ export function createComponent (
     return
   }
 
+  // 此处baseContror即是Vue类
   const baseCtor = context.$options._base
 
+  // 如果传入的组件是 一个对象（平常写的那种方式） ，就用 Vue.extend 处理成一个新的构造函数
   // plain options object: turn it into a constructor
   if (isObject(Ctor)) {
     Ctor = baseCtor.extend(Ctor)
@@ -180,14 +183,16 @@ export function createComponent (
     }
   }
 
+  // 合并钩子（这儿钩子是什么？？）
   // merge component management hooks onto the placeholder node
   mergeHooks(data)
 
+  // 组件创建完成，返回vnode
   // return a placeholder vnode
   const name = Ctor.options.name || tag
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
-    data, undefined, undefined, undefined, context,
+    data, undefined, undefined/* 此处children为空 */, undefined, context,
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )
