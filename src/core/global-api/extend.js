@@ -49,6 +49,7 @@ export function initExtend (Vue: GlobalAPI) {
     )
     Sub['super'] = Super
 
+    // 令Sub具有和Super一样的能力
     // For props and computed properties, we define the proxy getters on
     // the Vue instances at extension time, on the extended prototype. This
     // avoids Object.defineProperty calls for each instance created.
@@ -81,6 +82,7 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.extendOptions = extendOptions
     Sub.sealedOptions = extend({}, Sub.options)
 
+    // 缓存已近创建过的组件构造器，使用时直接返回
     // cache constructor
     cachedCtors[SuperId] = Sub
     return Sub

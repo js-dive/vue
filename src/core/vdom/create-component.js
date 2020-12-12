@@ -27,6 +27,7 @@ import {
   deactivateChildComponent
 } from '../instance/lifecycle'
 
+// 每个组件都会有的钩子
 // hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (
@@ -117,6 +118,7 @@ export function createComponent (
     Ctor = baseCtor.extend(Ctor)
   }
 
+  // 如果此处返回的不是一个构造函数，就说明组件定义存在问题
   // if at this stage it's not a constructor or an async component factory,
   // reject.
   if (typeof Ctor !== 'function') {
@@ -183,7 +185,7 @@ export function createComponent (
     }
   }
 
-  // 合并钩子（这儿钩子是什么？？）
+  // 合并钩子（这儿钩子是什么？？ —— 据说是Patch时要执行的钩子）
   // merge component management hooks onto the placeholder node
   mergeHooks(data)
 
