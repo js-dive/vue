@@ -120,7 +120,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  * 传入数据变为响应式对象
  * 算法描述:
- * -先看对象是否含有 _ob__ ，并且是Observer 的实例( Vue中响应式对象的标记)
+ * -先看对象是否含有 __ob__ ，并且是Observer 的实例( Vue中响应式对象的标记)
  * -有,忽略
  * -没有，调用new Observer( value )。进行响应式化
  */
@@ -148,6 +148,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 
 /**
  * Define a reactive property on an Object.
+ * 本函数用于为对象中每一个属性定义响应式
  */
 export function defineReactive (
   obj: Object,
@@ -156,14 +157,16 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 该属性对应的依赖管理器
   const dep = new Dep()
 
-  // 获得对象属性描述符
+  // 获得属性描述符 - 如果某些对象不可配置就不增加响应式
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
   }
 
+  // 考虑属性描述符中已经定义过的getter和setter
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
@@ -173,7 +176,8 @@ export function defineReactive (
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
-      const value = getter ? getter.call(obj) : val // 保证了如果已经定义的get方法可以被继承下来，不会丢失
+      const value = getter ? getter.call(obj) : val // 保证了如果已经定义的getter可以被保留下来，不会丢失
+      // debugger
       if (Dep.target) {
         dep.depend() // 关联的当前属性
         if (childOb) {
@@ -198,7 +202,7 @@ export function defineReactive (
         customSetter()
       }
       if (setter) {
-        setter.call(obj, newVal) // 保证了如果已经定义的set方法可以被继承下来，不会丢失
+        setter.call(obj, newVal) // 保证了如果已经定义的set方法可以被保留下来，不会丢失
       } else {
         val = newVal
       }
@@ -212,6 +216,7 @@ export function defineReactive (
  * Set a property on an object. Adds the new property and
  * triggers change notification if the property doesn't
  * already exist.
+ * 为对象设置新属性的逻辑
  */
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (Array.isArray(target) && isValidArrayIndex(key)) {
@@ -242,6 +247,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
 
 /**
  * Delete a property and trigger change if necessary.
+ * 从对象中删除属性的逻辑
  */
 export function del (target: Array<any> | Object, key: any) {
   if (Array.isArray(target) && isValidArrayIndex(key)) {
@@ -269,6 +275,7 @@ export function del (target: Array<any> | Object, key: any) {
 /**
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
+ * 收集数组子元素中的的依赖
  */
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {
