@@ -23,12 +23,39 @@
 
   <script>
     const nana = Vue.extend({
-      template: `
-        <section>
-          <slot />
-        </section>
-      `
+      render (h) {
+        return h('div', {
+        }, [
+          h('span', { style: { color: 'red' }}, this.nanaMsg),
+          h('br'),
+          h('span', { style: { color: 'blue' }}, this.nanaMsgWithNumber)
+        ])
+      },
+      data () {
+        return {
+          nanaMsg: 'nana'
+        }
+      },
+      computed: {
+        nanaMsgWithNumber () {
+          return this.nanaMsg + '100'
+        }
+      },
+      watch: {
+        nanaMsg: {
+          immediate: true,
+          handler (val) {
+            console.log(val)
+          }
+        }
+      },
+      mounted () {
+        setTimeout(() => {
+          this.nanaMsg = 'nanaco'
+        }, 4000)
+      }
     })
+
     const a = new Vue({
       el: '#app',
       components: {
@@ -38,11 +65,13 @@
         message: 'hello world'
       },
       render (createElement) {
-        return createElement('nana', {
-          attrs: {
-            id: 'app'
-          }
-        }, this.message)
+        return createElement('div', { attrs: { id: 'app' }}, [
+          createElement('nana', {
+            attrs: {
+              id: 'app-nana'
+            }
+          }), this.message
+        ])
       }
     })
   </script>
