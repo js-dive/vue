@@ -629,7 +629,7 @@ export function createPatchFunction (backend) {
   // 我们只需要将VNode与DOMNode 建立一个更新的关系
   // 递归触发每一个虚拟DOM的update,来更新对应的真的DOM的数据
   return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
-    debugger
+    // debugger
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return

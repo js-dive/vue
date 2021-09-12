@@ -30,14 +30,11 @@ export function simpleNormalizeChildren (children: any) {
 // is needed to cater to all possible types of children values.
 export function normalizeChildren (children: any): ?Array<VNode> {
   if (isPrimitive(children)) {
-    debugger
     return [createTextVNode(children)]
   }
   if (Array.isArray(children)) {
-    debugger
     return normalizeArrayChildren(children)
   }
-  debugger
   return undefined
 }
 
