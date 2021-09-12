@@ -35,10 +35,10 @@ export default class Watcher {
   expression: string; // 关联表达式或渲染方法体
   cb: Function; // 在定义Vue 构造函数的时候，传入的watch函数体（值发生变化时的回调函数，function(nVal,oVal){}）
   id: number;
-  deep: boolean;
+  deep: boolean;// watcher来源，是由Vue内部自己生成的（渲染Watcher、computed选项）还是由用户自己定义的（watch选项）
   user: boolean;
   lazy: boolean;// 计算属性，和watch 来控制不要让Watcher 立即执行
-  sync: boolean;
+  sync: boolean;// 是否同步执行 - SSR时为true
   dirty: boolean;
   active: boolean;
 
@@ -111,14 +111,16 @@ export default class Watcher {
 
   /**
    * Evaluate the getter, and re-collect dependencies.
+   * 计算getter，重新收集依赖
    */
   get () {
-    // 执行前把watcher放到全局作用域
+    // 执行前把watcher放到全局作用域 - 赋值给Dep类的静态属性target
     pushTarget(this)
     let value
     const vm = this.vm
     try {
       value = this.getter.call(vm, vm)
+      debugger
     } catch (e) {
       if (this.user) {
         handleError(e, vm, `getter for watcher "${this.expression}"`)
@@ -131,9 +133,9 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
-    // 执行后把watcher从全局作用域移除
+    // 执行后把watcher从全局作用域移除 - Dep类的静态属性target换为先前的watcher或undefined
       popTarget()
-      // "清空"关联的dep数据
+      // "清空"关联的dep数据 - 清理旧的无关的依赖
       this.cleanupDeps()
     }
     return value
@@ -155,15 +157,20 @@ export default class Watcher {
 
   /**
    * Clean up for dependency collection.
+   * 清理依赖集合
    */
   cleanupDeps () {
     let i = this.deps.length
     while (i--) {
       const dep = this.deps[i]
-      if (!this.newDepIds.has(dep.id)) { // 在二次提交中归档就是让旧的deps 和新的 newDeps-致
+      // 在二次提交中归档就是让旧的deps 和新的 newDeps-致
+      // 如果新的dep集合不存在当前dep，则从dep中移除当前watcher（自己）
+      // 也就是当重新收集依赖时，若不再依赖当前watcher，应该删掉
+      if (!this.newDepIds.has(dep.id)) {
         dep.removeSub(this)
       }
     }
+    // 交换新旧depId集合
     let tmp = this.depIds
     this.depIds = this.newDepIds
     this.newDepIds = tmp
@@ -181,13 +188,18 @@ export default class Watcher {
   update () {
     // 本质就是调用run方法
     /* istanbul ignore else */
-    if (this.lazy) { // 主要针对计算属性，一 般用于求值计算
+    if (this.lazy) {
+      // 主要针对计算属性，一 般用于求值计算
+      // state createComputedGetter 中有调用
       this.dirty = true
-    } else if (this.sync) { // 同步，主要用于SSR，同步就表示立即计算
+    } else if (this.sync) {
+      // 同步，主要用于SSR，同步就表示立即计算
       this.run()
     } else {
-      queueWatcher(this) // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this . run(),
+      // 将当前watcher插入到异步队列
+      // 一般浏览器中的异步运行，本质上就是异步执行run //类比: setTimeout( () => this.run(),
       // 转到相关定义，可发现是在 -- 循环调用run方法
+      queueWatcher(this)
     }
   }
 
@@ -227,6 +239,7 @@ export default class Watcher {
   /**
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
+   * 计算值，计算完成后dirty设为true
    */
   evaluate () {
     this.value = this.get()
@@ -245,6 +258,7 @@ export default class Watcher {
 
   /**
    * Remove self from all dependencies' subscriber list.
+   * 从所有的依赖管理器中把自己移除
    */
   teardown () {
     if (this.active) {

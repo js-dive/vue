@@ -57,14 +57,19 @@ export default class Dep {
 // the current target watcher being evaluated.
 // this is globally unique because there could be only one
 // watcher being evaluated at any time.
+// 当前正在被计算的watcher。
+// 同一时刻内只能存在一个watcher
+// 仅在Watcher类下get方法中发生改变
 Dep.target = null
 const targetStack = []
 
 export function pushTarget (_target: Watcher) {
+  // 如果当前正在被计算的watcher存在，在计算另一个watcher前先把当前被计算的watcher压入到栈中
   if (Dep.target) targetStack.push(Dep.target)
   Dep.target = _target
 }
 
 export function popTarget () {
+  // 计算完成后把之前被压入到栈中的watcher弹出来，恢复上一个watcher
   Dep.target = targetStack.pop()
 }
