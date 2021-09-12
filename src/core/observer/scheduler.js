@@ -151,8 +151,11 @@ export function queueWatcher (watcher: Watcher) {
     if (!flushing) {
       queue.push(watcher)
     } else {
+      // 根据id，把watcher插入到合适的位置
+      // 若异步队列已经开始处理，则根据watcher的id把它插入到正确位置
       // if already flushing, splice the watcher based on its id
       // if already past its id, it will be run next immediately.
+      // 这里是由后往前进行查找的
       let i = queue.length - 1
       while (i > index && queue[i].id > watcher.id) {
         i--
