@@ -149,6 +149,8 @@ export function mountComponent (
   hydrating?: boolean
 ): Component {
   vm.$el = el
+  // 到这一步的时候，template必须被转换为render函数
+  // 如果此时$option中还是没有render函数，那就是出问题了
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
