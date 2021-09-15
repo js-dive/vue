@@ -78,8 +78,10 @@ function flushSchedulerQueue () {
     watcher.run() // 循环调用QueueWatcher里的 run方法
     // in dev build, check and stop circular updates.
     if (process.env.NODE_ENV !== 'production' && has[id] != null) {
+      // 记录循环次数
       circular[id] = (circular[id] || 0) + 1
       if (circular[id] > MAX_UPDATE_COUNT) {
+        // 如果循环次数已经超过最大值，则表示更新过程存在循环 - 例如在watch选项中，使用表达式让自己发生了变化，此时又将再次触发更新
         warn(
           'You may have an infinite update loop ' + (
             watcher.user
