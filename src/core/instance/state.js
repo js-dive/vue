@@ -130,7 +130,8 @@ function initData (vm: Component) {
   let i = keys.length
   while (i--) {
     const key = keys[i]
-    /** 这里判断只是为了避免props, data, method 等数据发生冲突，同名的问题*/
+    // 这里判断只是为了避免props, data, method 等数据发生冲突（同名）的问题
+    // 没有其他用途
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
@@ -146,13 +147,17 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
-      proxy(vm, `_data`, key) // 循环data所有属性，映射到Vue实例上，
+      // 循环data所有属性，映射到Vue实例上，
       // 就无需使用 app._data.xxx来访问属性
       // 而是直接使用app.data访问
+      proxy(vm, `_data`, key)
     }
   }
   // observe data
-  observe(data, true /* asRootData */) // 响应式化
+  // 这里是让data里的数据响应式化
+  // 相当于在demo的业务代码中直接调用的observer
+  // https://github.com/gogoend/blog/blob/04e8da87ee81ac38f3d7b0d2682ca47badb679fb/vue2/vue-src-relative-2/reactive-notify-watcher.html#L49
+  observe(data, true /* asRootData */)
 }
 
 function getData (data: Function, vm: Component): any {
