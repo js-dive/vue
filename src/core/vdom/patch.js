@@ -179,7 +179,10 @@ export function createPatchFunction (backend) {
     let i = vnode.data
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // 深入去拿vnode init阶段的钩子，并执行
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        // 这里可以直接跳钩子的定义componentVNodeHooks.init去看
+        // 调用结束后，vnode.componentInstance就有值了
         i(vnode, false /* hydrating */, parentElm, refElm)
       }
       // after calling the init hook, if the vnode is a child component
