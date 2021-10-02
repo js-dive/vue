@@ -22,7 +22,7 @@
   </div>
 
   <script>
-    const nana = Vue.extend({
+    const Nana = Vue.extend({
       render (h) {
         return h('div', {
         }, [
@@ -49,23 +49,33 @@
           }
         }
       },
+      created () {
+        console.log('nana created')
+      },
       mounted () {
         setTimeout(() => {
           this.nanaMsg = 'nanaco'
         }, 4000)
       }
     })
+    console.log(Nana)
 
-    const a = new Vue({
+    window.app = new Vue({
       el: '#app',
       components: {
-        nana
+        Nana
       },
-      data: {
-        message: 'hello world'
+      data () {
+        return {
+          message: 'hello world'
+        }
       },
+      // render (createElement) {
+      //   return createElement('div', { attrs: { id: 'app' }}, this.message)
+      // }
       render (createElement) {
         return createElement('div', { attrs: { id: 'app' }}, [
+          '111',
           createElement('nana', {
             attrs: {
               id: 'app-nana'
