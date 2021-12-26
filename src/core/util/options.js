@@ -20,6 +20,7 @@ import {
   isPlainObject
 } from 'shared/util'
 
+// 定义了组件上各个选项合并的策略
 /**
  * Option overwriting strategies are functions that handle
  * how to merge a parent option value and a child option
@@ -107,6 +108,7 @@ export function mergeDataOrFn (
   }
 }
 
+// data的合并策略
 strats.data = function (
   parentVal: any,
   childVal: any,
@@ -145,6 +147,7 @@ function mergeHook (
     : parentVal
 }
 
+// 生命周期函数的合并策略
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
@@ -175,6 +178,7 @@ ASSET_TYPES.forEach(function (type) {
   strats[type + 's'] = mergeAssets
 })
 
+// watch 的合并策略
 /**
  * Watchers.
  *
@@ -211,6 +215,7 @@ strats.watch = function (
   return ret
 }
 
+// 其他选项的合并策略
 /**
  * Other object hashes.
  */
@@ -369,9 +374,11 @@ export function mergeOptions (
   normalizeDirectives(child)
   const extendsFrom = child.extends
   if (extendsFrom) {
+    // exends 选项的合并逻辑
     parent = mergeOptions(parent, extendsFrom, vm)
   }
   if (child.mixins) {
+    // mixins 选项的合并逻辑
     for (let i = 0, l = child.mixins.length; i < l; i++) {
       parent = mergeOptions(parent, child.mixins[i], vm)
     }
@@ -386,6 +393,7 @@ export function mergeOptions (
       mergeField(key)
     }
   }
+  // 合并子组件、父组件选项
   function mergeField (key) {
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
