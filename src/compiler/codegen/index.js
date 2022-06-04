@@ -186,6 +186,8 @@ export function genFor (
   }
 
   el.forProcessed = true // avoid recursion
+
+  // _l 在此使用
   return `${altHelper || '_l'}((${exp}),` +
     `function(${alias}${iterator1}${iterator2}){` +
       `return ${(altGen || genElement)(el, state)}` +
@@ -363,6 +365,8 @@ function genForScopedSlot (
   const iterator1 = el.iterator1 ? `,${el.iterator1}` : ''
   const iterator2 = el.iterator2 ? `,${el.iterator2}` : ''
   el.forProcessed = true // avoid recursion
+
+  // _l 在此使用
   return `_l((${exp}),` +
     `function(${alias}${iterator1}${iterator2}){` +
       `return ${genScopedSlot(key, el, state)}` +
