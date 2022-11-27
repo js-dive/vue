@@ -63,9 +63,12 @@ export function shallowRef(value?: unknown) {
 }
 
 function createRef(rawValue: unknown, shallow: boolean) {
+  // 如果对象已经是ref，就不再转换了，直接返回
   if (isRef(rawValue)) {
     return rawValue
   }
+
+  // 最终ref里的值在其中保存
   const ref: any = {}
   def(ref, RefFlag, true)
   def(ref, ReactiveFlags.IS_SHALLOW, shallow)
@@ -195,6 +198,7 @@ export function toRefs<T extends object>(object: T): ToRefs<T> {
     warn(`toRefs() expects a reactive object but received a plain one.`)
   }
   const ret: any = isArray(object) ? new Array(object.length) : {}
+  // 遍历对象中每个key，逐个转换为ref
   for (const key in object) {
     ret[key] = toRef(object, key)
   }
@@ -220,9 +224,13 @@ export function toRef<T extends object, K extends keyof T>(
   defaultValue?: T[K]
 ): ToRef<T[K]> {
   const val = object[key]
+
+  // 如果对象已经是ref，就不再转换了，直接返回
   if (isRef(val)) {
     return val as any
   }
+
+  // 创建Ref
   const ref = {
     get value() {
       const val = object[key]

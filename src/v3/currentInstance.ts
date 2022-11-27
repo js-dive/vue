@@ -8,6 +8,10 @@ export let currentInstance: Component | null = null
  *
  * @internal this function needs manual type declaration because it relies
  * on previously manually authored types from Vue 2
+ *
+ * 获取当前实例
+ * 仅在组件setup以及生命周期函数期间能够拿到当前实例
+ * @returns
  */
 export function getCurrentInstance(): { proxy: Component } | null {
   return currentInstance && { proxy: currentInstance }
@@ -15,6 +19,10 @@ export function getCurrentInstance(): { proxy: Component } | null {
 
 /**
  * @internal
+ *
+ * 设置当前Vue2实例
+ * @param vm
+ * @returns
  */
 export function setCurrentInstance(vm: Component | null = null) {
   if (!vm) currentInstance && currentInstance._scope.off()

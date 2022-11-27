@@ -27,12 +27,13 @@ export interface SetupContext {
 
 export function initSetup(vm: Component) {
   const options = vm.$options
-  const setup = options.setup
+  const setup = options.setup // setup函数必然存在
   if (setup) {
     const ctx = (vm._setupContext = createSetupContext(vm))
 
     setCurrentInstance(vm)
     pushTarget()
+    // setupResult 即 setup 的返回值
     const setupResult = invokeWithErrorHandling(
       setup,
       null,
@@ -43,11 +44,14 @@ export function initSetup(vm: Component) {
     popTarget()
     setCurrentInstance()
 
+    // 如果返回值是一个函数的话，看起来应该是个渲染函数
     if (isFunction(setupResult)) {
       // render function
       // @ts-ignore
       options.render = setupResult
-    } else if (isObject(setupResult)) {
+    }
+    // 如果返回的是一个纯对象
+    else if (isObject(setupResult)) {
       // bindings
       if (__DEV__ && setupResult instanceof VNode) {
         warn(

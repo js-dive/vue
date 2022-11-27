@@ -27,6 +27,11 @@ export interface Target {
 // only unwrap nested ref
 export type UnwrapNestedRefs<T> = T extends Ref ? T : UnwrapRefSimple<T>
 
+/**
+ * Make obj reactivity
+ *
+ * 返回对象的响应式副本
+ */
 export function reactive<T extends object>(target: T): UnwrapNestedRefs<T>
 export function reactive(target: object) {
   makeReactive(target, false)
@@ -38,9 +43,10 @@ export declare const ShallowReactiveMarker: unique symbol
 export type ShallowReactive<T> = T & { [ShallowReactiveMarker]?: true }
 
 /**
- * Return a shallowly-reactive copy of the original object, where only the root
- * level properties are reactive. It also does not auto-unwrap refs (even at the
- * root level).
+ * 返回原始对象的浅响应式拷贝，仅有根层级下的属性是响应式的
+ * 它不会自动解包ref（即使是在根层级）
+ *
+ * @param target
  */
 export function shallowReactive<T extends object>(
   target: T
@@ -50,6 +56,13 @@ export function shallowReactive<T extends object>(
   return target
 }
 
+/**
+ * 将传入对象进行响应式处理
+ * 该函数被shallowReactive、reactive所使用
+ * @param target 对象
+ * @param shallow
+ * @returns
+ */
 function makeReactive(target: any, shallow: boolean) {
   // if trying to observe a readonly proxy, return the readonly version.
   if (!isReadonly(target)) {
@@ -74,6 +87,7 @@ function makeReactive(target: any, shallow: boolean) {
         )
       }
     }
+    // 转换为响应式对象
     const ob = observe(
       target,
       shallow,

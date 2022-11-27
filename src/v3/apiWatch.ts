@@ -46,6 +46,7 @@ type MapSources<T, Immediate> = {
 
 type OnCleanup = (cleanupFn: () => void) => void
 
+// flushSchedulerQueue sortCompareFn 调用时，会根据此进行排序
 export interface WatchOptionsBase extends DebuggerOptions {
   flush?: 'pre' | 'post' | 'sync'
 }
@@ -96,6 +97,7 @@ const INITIAL_WATCHER_VALUE = {}
 
 type MultiWatchSources = (WatchSource<unknown> | object)[]
 
+//#region watch 函数定义与实现
 // overload: array of multiple sources + cb
 export function watch<
   T extends MultiWatchSources,
@@ -136,6 +138,14 @@ export function watch<
 ): WatchStopHandle
 
 // implementation
+/**
+ * watch 函数入口
+ *
+ * @param source 监听源
+ * @param cb 回调函数
+ * @param options 监听选项
+ * @returns
+ */
 export function watch<T = any, Immediate extends Readonly<boolean> = false>(
   source: T | WatchSource<T>,
   cb: any,
@@ -148,8 +158,10 @@ export function watch<T = any, Immediate extends Readonly<boolean> = false>(
         `supports \`watch(source, cb, options?) signature.`
     )
   }
+  // 真正的创建watcher的逻辑
   return doWatch(source as any, cb, options)
 }
+//#endregion
 
 function doWatch(
   source: WatchSource | WatchSource[] | WatchEffect | object,
@@ -162,6 +174,7 @@ function doWatch(
     onTrigger
   }: WatchOptions = emptyObject
 ): WatchStopHandle {
+  // cb 未传入，但传了immediate、deep时将会报错
   if (__DEV__ && !cb) {
     if (immediate !== undefined) {
       warn(
@@ -185,6 +198,13 @@ function doWatch(
   }
 
   const instance = currentInstance
+  /**
+   * 对函数调用进行一层包裹
+   * @param fn 要调用的函数
+   * @param type 调用的类型？
+   * @param args 函数参数
+   * @returns
+   */
   const call = (fn: Function, type: string, args: any[] | null = null) =>
     invokeWithErrorHandling(fn, null, args, instance, type)
 
@@ -192,19 +212,25 @@ function doWatch(
   let forceTrigger = false
   let isMultiSource = false
 
+  // 如果是ref则返回其中的value
   if (isRef(source)) {
     getter = () => source.value
     forceTrigger = isShallow(source)
-  } else if (isReactive(source)) {
+  }
+  // 如果经过reactive处理，就返回这个值
+  else if (isReactive(source)) {
     getter = () => {
       ;(source as any).__ob__.dep.depend()
       return source
     }
     deep = true
-  } else if (isArray(source)) {
+  }
+  // 如果是个数组，那就说明是有多个监听源
+  else if (isArray(source)) {
     isMultiSource = true
     forceTrigger = source.some(s => isReactive(s) || isShallow(s))
     getter = () =>
+      // 因此对这些监听源再各自处理一次
       source.map(s => {
         if (isRef(s)) {
           return s.value
@@ -216,7 +242,9 @@ function doWatch(
           __DEV__ && warnInvalidSource(s)
         }
       })
-  } else if (isFunction(source)) {
+  }
+  // 如果是个函数
+  else if (isFunction(source)) {
     if (cb) {
       // getter with cb
       getter = () => call(source, WATCHER_GETTER)
@@ -232,22 +260,31 @@ function doWatch(
         return call(source, WATCHER, [onCleanup])
       }
     }
-  } else {
+  }
+  // 其它神经的情况 - watch源无效
+  else {
     getter = noop
     __DEV__ && warnInvalidSource(source)
   }
 
+  // TODO: 如果deep为true的话，就遍历一下整个对象，重新设置getter？
   if (cb && deep) {
     const baseGetter = getter
     getter = () => traverse(baseGetter())
   }
 
+  //#region 清理函数定义、设置
   let cleanup: () => void
+  /**
+   * 设置cleanup函数
+   * @param fn
+   */
   let onCleanup: OnCleanup = (fn: () => void) => {
     cleanup = watcher.onStop = () => {
-      call(fn, WATCHER_CLEANUP)
+      call(fn, WATCHER_CLEANUP) // TODO: 好像没有任何地方有传入fn这个参数？
     }
   }
+  //#endregion
 
   // in SSR there is no need to setup an actual effect, and it should be noop
   // unless it's eager
@@ -266,6 +303,7 @@ function doWatch(
     return noop
   }
 
+  // 拿到watcher - 与@vue/composition-api相比，这里是通过Vue内部Watcher类来获取的
   const watcher = new Watcher(currentInstance, getter, noop, {
     lazy: true
   })
@@ -273,6 +311,7 @@ function doWatch(
 
   let oldValue = isMultiSource ? [] : INITIAL_WATCHER_VALUE
   // overwrite default run
+  // 覆盖调Watcher类中源先提供的run方法
   watcher.run = () => {
     if (!watcher.active) {
       return
@@ -290,9 +329,11 @@ function doWatch(
           : hasChanged(newValue, oldValue))
       ) {
         // cleanup before running cb again
+        // 在watch中传入的回调执行之前，进行一次清理
         if (cleanup) {
           cleanup()
         }
+        // 调用我们传入的回调函数
         call(cb, WATCHER_CB, [
           newValue,
           // pass undefined as the old value when it's changed for the first time
@@ -307,19 +348,30 @@ function doWatch(
     }
   }
 
+  // TODO: 似乎和调度相关？
+  // 覆盖watcher中原有的update方法
+  // 同步调用
   if (flush === 'sync') {
     watcher.update = watcher.run
-  } else if (flush === 'post') {
+  }
+  // post调用
+  else if (flush === 'post') {
     watcher.post = true
     watcher.update = () => queueWatcher(watcher)
-  } else {
+  }
+  // pre调用
+  else {
     // pre
     watcher.update = () => {
+      // 如果当前实例未挂载，就把pre watcher往_preWatchers数组里压
+      // TODO: 在beforeMount后，mounted之前，会遍历_preWatchers，执行其中watcher.run，不进行排队（按照同步watcher执行）
       if (instance && instance === currentInstance && !instance._isMounted) {
         // pre-watcher triggered before
         const buffer = instance._preWatchers || (instance._preWatchers = [])
+        // 只压一次，已存在就不压了
         if (buffer.indexOf(watcher) < 0) buffer.push(watcher)
       } else {
+        // 否则正常排队
         queueWatcher(watcher)
       }
     }
@@ -331,10 +383,14 @@ function doWatch(
   }
 
   // initial run
+  // 初次运行
+  // 如果传入了cb
   if (cb) {
+    // 如果是立即执行
     if (immediate) {
       watcher.run()
     } else {
+      // TODO: 否则，获取一下值？
       oldValue = watcher.get()
     }
   } else if (flush === 'post' && instance) {

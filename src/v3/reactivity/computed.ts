@@ -38,9 +38,12 @@ export function computed<T>(
   getterOrOptions: ComputedGetter<T> | WritableComputedOptions<T>,
   debugOptions?: DebuggerOptions
 ) {
+  // 声明getter、setter两个变量
   let getter: ComputedGetter<T>
   let setter: ComputedSetter<T>
 
+  // 归一化getterOrOptions，将它们分别赋值给getter、setter
+  // 检查是不是仅传入了getter
   const onlyGetter = isFunction(getterOrOptions)
   if (onlyGetter) {
     getter = getterOrOptions
@@ -54,9 +57,10 @@ export function computed<T>(
     setter = getterOrOptions.set
   }
 
+  // 在非服务器渲染环境下，创建watcher
   const watcher = isServerRendering()
     ? null
-    : new Watcher(currentInstance, getter, noop, { lazy: true })
+    : new Watcher(currentInstance, getter, noop, { lazy: true }) // 设置计算属性Watcher —— 逻辑与传统的Vue 2主项目一致
 
   if (__DEV__ && watcher && debugOptions) {
     watcher.onTrack = debugOptions.onTrack
@@ -69,9 +73,11 @@ export function computed<T>(
     effect: watcher,
     get value() {
       if (watcher) {
+        // 如果watcher dirty了，就重新进行一次计算来获取新的值
         if (watcher.dirty) {
           watcher.evaluate()
         }
+        // TODO: 如果存在全剧唯一正在被计算的watcher，那么就进行以来收集
         if (Dep.target) {
           if (__DEV__ && Dep.target.onTrack) {
             Dep.target.onTrack({
@@ -83,6 +89,7 @@ export function computed<T>(
           }
           watcher.depend()
         }
+        // 返回计算属性watcher的值
         return watcher.value
       } else {
         return getter()
