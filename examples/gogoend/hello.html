@@ -1,0 +1,90 @@
+<!--
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 23:51:00
+ * @FilePath: \vue\examples\modal\index.html
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>CreateElement 函数</title>
+  <!-- Delete ".min" for console warnings in development -->
+  <script src="../../dist/vue.js"></script>
+</head>
+
+<body>
+
+  <div id="app">
+  </div>
+
+  <script>
+    const Nana = Vue.extend({
+      render (h) {
+        return h('div', {
+        }, [
+          h('span', { style: { color: 'red' }}, this.nanaMsg),
+          h('br'),
+          h('span', { style: { color: 'blue' }}, this.nanaMsgWithNumber)
+        ])
+      },
+      data () {
+        return {
+          nanaMsg: 'nana'
+        }
+      },
+      computed: {
+        nanaMsgWithNumber () {
+          return this.nanaMsg + '100'
+        }
+      },
+      watch: {
+        nanaMsg: {
+          immediate: true,
+          handler (val) {
+            console.log(val)
+          }
+        }
+      },
+      created () {
+        console.log('nana created')
+      },
+      mounted () {
+        setTimeout(() => {
+          this.nanaMsg = 'nanaco'
+        }, 4000)
+      }
+    })
+    console.log(Nana)
+
+    window.app = new Vue({
+      el: '#app',
+      components: {
+        Nana
+      },
+      data () {
+        return {
+          message: 'hello world'
+        }
+      },
+      // render (createElement) {
+      //   return createElement('div', { attrs: { id: 'app' }}, this.message)
+      // }
+      render (createElement) {
+        return createElement('div', { attrs: { id: 'app' }}, [
+          '111',
+          createElement('nana', {
+            attrs: {
+              id: 'app-nana'
+            }
+          }), this.message
+        ])
+      }
+    })
+  </script>
+</body>
+
+</html>

@@ -1,10 +1,18 @@
+<!--
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 23:51:00
+ * @FilePath: \vue\examples\modal\index.html
+ * @Description: 
+--> 
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <title>Vue.js modal component example</title>
     <!-- Delete ".min" for console warnings in development -->
-    <script src="../../dist/vue.min.js"></script>
+    <script src="../../dist/vue.js"></script>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
@@ -12,6 +20,7 @@
     <script type="text/x-template" id="modal-template">
       <transition name="modal">
         <div class="modal-mask">
+          文字测试
           <div class="modal-wrapper">
             <div class="modal-container">
 
@@ -61,10 +70,15 @@
       })
 
       // start app
-      new Vue({
+      a = new Vue({
         el: '#app',
         data: {
           showModal: false
+        },
+        watch: {
+          showModal (n, o) {
+            debugger
+          }
         }
       })
     </script>

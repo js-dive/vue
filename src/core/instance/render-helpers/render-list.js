@@ -4,6 +4,9 @@ import { isObject, isDef } from 'core/util/index'
 
 /**
  * Runtime helper for rendering v-for lists.
+ *
+ * 用于渲染v-for列表的辅助函数；
+ * 该函数会被挂到Vue.prototype上
  */
 export function renderList (
   val: any,

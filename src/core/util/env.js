@@ -79,6 +79,7 @@ export const nextTick = (function () {
     }
   }
 
+  // nextTick兼容处理
   // An asynchronous deferring mechanism.
   // In pre 2.4, we used to use microtasks (Promise/MutationObserver)
   // but microtasks actually has too high a priority and fires in between

@@ -60,6 +60,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
     if (!prevVnode) {
+      // 首次渲染
       // initial render
       vm.$el = vm.__patch__(
         vm.$el, vnode, hydrating, false /* removeOnly */,
@@ -70,6 +71,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
       // this prevents keeping a detached DOM tree in memory (#5851)
       vm.$options._parentElm = vm.$options._refElm = null
     } else {
+      // 非首次渲染，更新
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
@@ -82,6 +84,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
       vm.$el.__vue__ = vm
     }
     // if parent is an HOC, update its $el as well
+    // 如果父组件是个高阶组件，也更新它的$el
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }
@@ -140,12 +143,15 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+//
 export function mountComponent (
   vm: Component,
   el: ?Element,
   hydrating?: boolean
 ): Component {
   vm.$el = el
+  // 到这一步的时候，template必须被转换为render函数
+  // 如果此时$option中还是没有render函数，那就是出问题了
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode
     if (process.env.NODE_ENV !== 'production') {
@@ -189,10 +195,13 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      // _render用于生成虚拟DOM
+      // update 内部调用patch 方法将虚拟DOM与真实的DOM同步 (diff算法)
       vm._update(vm._render(), hydrating)
     }
   }
 
+  // 渲染Watcher初始化完后，调用下方生命周期函数mounted
   vm._watcher = new Watcher(vm, updateComponent, noop)
   hydrating = false
 

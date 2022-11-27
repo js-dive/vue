@@ -1,3 +1,13 @@
+/*
+ * @Author: gogoend
+ * @Date: 2020-02-02 01:34:53
+ * @LastEditors: gogoend
+ * @LastEditTime: 2020-06-29 23:11:29
+ * @FilePath: \vue\src\core\observer\index.js
+ * @Description:Observer类，observe的工厂函数.
+ * traverse.js递归遍历响应式数据.目的是触发依赖收集.
+ */
+
 /* @flow */
 
 import Dep from './dep'
@@ -33,7 +43,7 @@ export const observerState = {
  * collect dependencies and dispatches updates.
  */
 export class Observer {
-  value: any;
+  value: any; // 循环引用:对象.__ob__， ob.value
   dep: Dep;
   vmCount: number; // number of vms that has this object as root $data
 
@@ -41,15 +51,18 @@ export class Observer {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
-    def(value, '__ob__', this)
+    def(value, '__ob__', this) // 技巧:逻辑上等价于value.__ob__ = this
+
+    // 真正响应式化的逻辑
     if (Array.isArray(value)) {
+      // 判断浏览器是否兼容__proto__
       const augment = hasProto
         ? protoAugment
         : copyAugment
       augment(value, arrayMethods, arrayKeys)
-      this.observeArray(value)
+      this.observeArray(value) // 遍历数组的元素，进行递归observe
     } else {
-      this.walk(value)
+      this.walk(value) // 遍历对象的属性，递归observe
     }
   }
 
@@ -80,16 +93,18 @@ export class Observer {
 /**
  * Augment an target Object or Array by intercepting
  * the prototype chain using __proto__
+ * 浏览器支持__proto__
  */
 function protoAugment (target, src: Object, keys: any) {
   /* eslint-disable no-proto */
-  target.__proto__ = src
+  target.__proto__ = src // 完成数组原型链修改 从而使得数组变成响应式的 pop, push, shift, unshift,
   /* eslint-enable no-proto */
 }
 
 /**
  * Augment an target Object or Array by defining
  * hidden properties.
+ * 浏览器不支持__proto__ 就将这些方法直接混入到当前数组中，属性访问元素
  */
 /* istanbul ignore next */
 function copyAugment (target: Object, src: Object, keys: Array<string>) {
@@ -103,6 +118,11 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ * 传入数据变为响应式对象
+ * 算法描述:
+ * -先看对象是否含有 __ob__ ，并且是Observer 的实例( Vue中响应式对象的标记)
+ * -有,忽略
+ * -没有，调用new Observer( value )。进行响应式化
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
@@ -128,6 +148,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 
 /**
  * Define a reactive property on an Object.
+ * 本函数用于为对象中每一个属性定义响应式
  */
 export function defineReactive (
   obj: Object,
@@ -136,13 +157,16 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 该属性对应的依赖管理器
   const dep = new Dep()
 
+  // 获得属性描述符 - 如果某些对象不可配置就不增加响应式
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return
   }
 
+  // 考虑属性描述符中已经定义过的getter和setter
   // cater for pre-defined getter/setters
   const getter = property && property.get
   const setter = property && property.set
@@ -152,10 +176,12 @@ export function defineReactive (
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
-      const value = getter ? getter.call(obj) : val
+      const value = getter ? getter.call(obj) : val // 保证了如果已经定义的getter可以被保留下来，不会丢失
+      // debugger
       if (Dep.target) {
-        dep.depend()
+        dep.depend() // 关联的当前属性
         if (childOb) {
+          // 收集子属性
           childOb.dep.depend()
           if (Array.isArray(value)) {
             dependArray(value)
@@ -167,6 +193,7 @@ export function defineReactive (
     set: function reactiveSetter (newVal) {
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 若数据无变化，就不会派发更新
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
@@ -175,12 +202,12 @@ export function defineReactive (
         customSetter()
       }
       if (setter) {
-        setter.call(obj, newVal)
+        setter.call(obj, newVal) // 保证了如果已经定义的set方法可以被保留下来，不会丢失
       } else {
         val = newVal
       }
-      childOb = !shallow && observe(newVal)
-      dep.notify()
+      childOb = !shallow && observe(newVal) // 对新值进行响应式化
+      dep.notify() // 派发更新
     }
   })
 }
@@ -189,6 +216,7 @@ export function defineReactive (
  * Set a property on an object. Adds the new property and
  * triggers change notification if the property doesn't
  * already exist.
+ * 为对象设置新属性的逻辑
  */
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (Array.isArray(target) && isValidArrayIndex(key)) {
@@ -219,6 +247,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
 
 /**
  * Delete a property and trigger change if necessary.
+ * 从对象中删除属性的逻辑
  */
 export function del (target: Array<any> | Object, key: any) {
   if (Array.isArray(target) && isValidArrayIndex(key)) {
@@ -246,6 +275,7 @@ export function del (target: Array<any> | Object, key: any) {
 /**
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
+ * 收集数组子元素中的的依赖
  */
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {

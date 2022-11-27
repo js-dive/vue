@@ -48,10 +48,12 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 处理options.props的成员，一般定义组件的时候，用于定义对外的成员，初学少用，其处理逻辑与data 类似
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
+  // 响应式化data
   if (opts.data) {
-    initData(vm)
+    initData(vm) // ~自上次提交后大致告一段落over
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
@@ -77,7 +79,7 @@ function initProps (vm: Component, propsOptions: Object) {
     if (process.env.NODE_ENV !== 'production') {
       const hyphenatedKey = hyphenate(key)
       if (isReservedAttribute(hyphenatedKey) ||
-          config.isReservedAttr(hyphenatedKey)) {
+        config.isReservedAttr(hyphenatedKey)) {
         warn(
           `"${hyphenatedKey}" is a reserved attribute and cannot be used as component prop.`,
           vm
@@ -95,13 +97,13 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
-      defineReactive(props, key, value)
+      defineReactive(props, key, value) // 属性响应式化
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
-      proxy(vm, `_props`, key)
+      proxy(vm, `_props`, key) // 将_props 上的成员映射到Vue实例上，是的不需要app._props.xxx 来方法，直接使用app.xxx来访问
     }
   }
   observerState.shouldConvert = true
@@ -109,8 +111,9 @@ function initProps (vm: Component, propsOptions: Object) {
 
 function initData (vm: Component) {
   let data = vm.$options.data
+  // 将data挂载到实例的_data上
   data = vm._data = typeof data === 'function'
-    ? getData(data, vm)
+    ? getData(data, vm) // 调用函数，获得返回值，计算data
     : data || {}
   if (!isPlainObject(data)) {
     data = {}
@@ -127,6 +130,8 @@ function initData (vm: Component) {
   let i = keys.length
   while (i--) {
     const key = keys[i]
+    // 这里判断只是为了避免props, data, method 等数据发生冲突（同名）的问题
+    // 没有其他用途
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
@@ -142,14 +147,21 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 循环data所有属性，映射到Vue实例上，
+      // 就无需使用 app._data.xxx来访问属性
+      // 而是直接使用app.data访问
       proxy(vm, `_data`, key)
     }
   }
   // observe data
+  // 这里是让data里的数据响应式化
+  // 相当于在demo的业务代码中直接调用的observer
+  // https://github.com/gogoend/blog/blob/04e8da87ee81ac38f3d7b0d2682ca47badb679fb/vue2/vue-src-relative-2/reactive-notify-watcher.html#L49
   observe(data, true /* asRootData */)
 }
 
 function getData (data: Function, vm: Component): any {
+  // 新版本修复了相关问题 #7573 disable dep collection, when invoking data getters
   try {
     return data.call(vm, vm)
   } catch (e) {
@@ -208,8 +220,8 @@ export function defineComputed (
   const shouldCache = !isServerRendering()
   if (typeof userDef === 'function') {
     sharedPropertyDefinition.get = shouldCache
-      ? createComputedGetter(key)
-      : userDef
+      ? createComputedGetter(key) // 浏览器中触发的情况
+      : userDef // 新版本中此处是 createGetterInvoker( userDef ) 服务端渲染的时候触发，里面直接计算，不会涉及到watcher处理
     sharedPropertyDefinition.set = noop
   } else {
     sharedPropertyDefinition.get = userDef.get
@@ -222,7 +234,7 @@ export function defineComputed (
       : noop
   }
   if (process.env.NODE_ENV !== 'production' &&
-      sharedPropertyDefinition.set === noop) {
+    sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
       warn(
         `Computed property "${key}" was assigned to but it has no setter.`,
@@ -233,6 +245,7 @@ export function defineComputed (
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+// 浏览器中出发的情况，里面会对数据的访问关联一个watcher
 function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
@@ -273,6 +286,7 @@ function initMethods (vm: Component, methods: Object) {
       }
     }
     vm[key] = methods[key] == null ? noop : bind(methods[key], vm)
+    // 将methods 属性中的方法绑定上下文后挂载到vue实例上
   }
 }
 
@@ -303,6 +317,7 @@ function createWatcher (
     handler = vm[handler]
   }
   return vm.$watch(keyOrFn, handler, options)
+  // new 了一个Watcher？？
 }
 
 export function stateMixin (Vue: Class<Component>) {

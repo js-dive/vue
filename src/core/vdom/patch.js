@@ -71,7 +71,7 @@ export function createPatchFunction (backend) {
   const cbs = {}
 
   const { modules, nodeOps } = backend
-
+  // 收集钩子函数？？
   for (i = 0; i < hooks.length; ++i) {
     cbs[hooks[i]] = []
     for (j = 0; j < modules.length; ++j) {
@@ -104,7 +104,13 @@ export function createPatchFunction (backend) {
   }
 
   let inPre = 0
-  function createElm (vnode, insertedVnodeQueue, parentElm, refElm, nested) {
+  function createElm (
+    vnode,
+    insertedVnodeQueue,
+    parentElm,
+    refElm,
+    nested
+    ) {
     vnode.isRootInsert = !nested // for transition enter check
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
@@ -113,7 +119,7 @@ export function createPatchFunction (backend) {
     const data = vnode.data
     const children = vnode.children
     const tag = vnode.tag
-    if (isDef(tag)) {
+    if (isDef(tag)) { // 判断节点标签：dom节点 || 文本节点、注释节点
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
           inPre++
@@ -145,32 +151,18 @@ export function createPatchFunction (backend) {
       setScope(vnode)
 
       /* istanbul ignore if */
-      if (__WEEX__) {
-        // in Weex, the default insertion order is parent-first.
-        // List items can be optimized to use children-first insertion
-        // with append="tree".
-        const appendAsTree = isDef(data) && isTrue(data.appendAsTree)
-        if (!appendAsTree) {
-          if (isDef(data)) {
-            invokeCreateHooks(vnode, insertedVnodeQueue)
-          }
-          insert(parentElm, vnode.elm, refElm)
-        }
-        createChildren(vnode, children, insertedVnodeQueue)
-        if (appendAsTree) {
-          if (isDef(data)) {
-            invokeCreateHooks(vnode, insertedVnodeQueue)
-          }
-          insert(parentElm, vnode.elm, refElm)
-        }
-      } else {
+      // 先插入子节点，后插入父节点
+      // eslint-disable-next-line no-lone-blocks
+      {
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
+          // 调用所有的create钩子，同时把 vnode push 到 insertedVnodeQueue 中
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+  // 插入：父节点 当前vode节点 参考节点
+        // debugger
         insert(parentElm, vnode.elm, refElm)
       }
-
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
         inPre--
       }
@@ -187,7 +179,10 @@ export function createPatchFunction (backend) {
     let i = vnode.data
     if (isDef(i)) {
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // 深入去拿vnode init阶段的钩子，并执行
       if (isDef(i = i.hook) && isDef(i = i.init)) {
+        // 这里可以直接跳钩子的定义componentVNodeHooks.init去看
+        // 调用结束后，vnode.componentInstance就有值了
         i(vnode, false /* hydrating */, parentElm, refElm)
       }
       // after calling the init hook, if the vnode is a child component
@@ -259,6 +254,7 @@ export function createPatchFunction (backend) {
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
       for (let i = 0; i < children.length; ++i) {
+        // 递归调用子节点 createElm，层层插入
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true)
       }
     } else if (isPrimitive(vnode.text)) {
@@ -628,7 +624,15 @@ export function createPatchFunction (backend) {
     }
   }
 
+  // !!! 据说其它都是工具函数直接看这里
+  // 二次提交的逻辑
+  // 每次数据更新->生成新的虚拟DOM-> diff旧的虚拟DOM（与真实DOM一一对应）-> 更新旧的虚拟DOM -> 同步真的DOM
+  // looseEqual？
+  // 分而治之，每一个虚拟DOM都和页面中的DOM一一对应
+  // 我们只需要将VNode与DOMNode 建立一个更新的关系
+  // 递归触发每一个虚拟DOM的update,来更新对应的真的DOM的数据
   return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
+    // debugger
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
@@ -642,6 +646,7 @@ export function createPatchFunction (backend) {
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue, parentElm, refElm)
     } else {
+      // 首次渲染，传入的oldVnode是真实DOM
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
         // patch existing root node
@@ -651,11 +656,11 @@ export function createPatchFunction (backend) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
           // a successful hydration.
-          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
+          if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) { // SSR 跳过
             oldVnode.removeAttribute(SSR_ATTR)
             hydrating = true
           }
-          if (isTrue(hydrating)) {
+          if (isTrue(hydrating)) { // 先跳过
             if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
               invokeInsertHook(vnode, insertedVnodeQueue, true)
               return oldVnode
@@ -671,12 +676,13 @@ export function createPatchFunction (backend) {
           }
           // either not server-rendered, or hydration failed.
           // create an empty node and replace it
-          oldVnode = emptyNodeAt(oldVnode)
+          oldVnode = emptyNodeAt(oldVnode) // 真实DOM转VNode
         }
+        // debugger
         // replacing existing element
         const oldElm = oldVnode.elm
         const parentElm = nodeOps.parentNode(oldElm)
-        createElm(
+        createElm( // VNode挂载到真实DOM
           vnode,
           insertedVnodeQueue,
           // extremely rare edge case: do not insert if old element is in a

@@ -27,6 +27,7 @@ import {
   deactivateChildComponent
 } from '../instance/lifecycle'
 
+// 每个组件都会有的钩子 —— 这里的钩子是组件patch阶段会使用的钩子
 // hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
   init (
@@ -36,12 +37,17 @@ const componentVNodeHooks = {
     refElm: ?Node
   ): ?boolean {
     if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
+      // createComponentInstanceForVnode 函数调用后将会返回一个子组件实例
+      // 这里创建子组件实例过程中，将会走一遍 Vue.prototype._init 中的除了（最后一步） $mount 之外的流程
+      // 此后vnode.componentInstance将有值
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance,
         parentElm,
         refElm
       )
+      // 子组件初次创建完成后，调用上一步没有调用的$mount方法
+      // 但浏览器环境下不会走这一步，hydrating在浏览器中均为false（可能和SSR相关）
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     } else if (vnode.data.keepAlive) {
       // kept-alive components, treat as a patch
@@ -94,6 +100,7 @@ const componentVNodeHooks = {
   }
 }
 
+// 要合并的钩子在这里，即 componentVNodeHooks 对象中的键
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
 export function createComponent (
@@ -107,13 +114,16 @@ export function createComponent (
     return
   }
 
+  // 此处baseContror即是Vue类
   const baseCtor = context.$options._base
 
+  // 如果传入的组件是 一个对象（平常写的那种方式） ，就用 Vue.extend 处理成一个新的构造函数
   // plain options object: turn it into a constructor
   if (isObject(Ctor)) {
     Ctor = baseCtor.extend(Ctor)
   }
 
+  // 如果此处返回的不是一个构造函数，就说明组件定义存在问题
   // if at this stage it's not a constructor or an async component factory,
   // reject.
   if (typeof Ctor !== 'function') {
@@ -180,14 +190,16 @@ export function createComponent (
     }
   }
 
+  // 合并钩子（这儿钩子是什么？？ —— 据说是Patch时要执行的钩子）
   // merge component management hooks onto the placeholder node
   mergeHooks(data)
 
+  // 组件创建完成，返回vnode
   // return a placeholder vnode
   const name = Ctor.options.name || tag
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
-    data, undefined, undefined, undefined, context,
+    data, undefined, undefined/* 此处children为空 */, undefined, context,
     { Ctor, propsData, listeners, tag, children },
     asyncFactory
   )
@@ -218,6 +230,7 @@ export function createComponentInstanceForVnode (
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  // 重新创建了一个子组件
   return new vnodeComponentOptions.Ctor(options)
 }
 

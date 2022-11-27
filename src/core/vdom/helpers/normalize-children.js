@@ -29,11 +29,13 @@ export function simpleNormalizeChildren (children: any) {
 // with hand-written render functions / JSX. In such cases a full normalization
 // is needed to cater to all possible types of children values.
 export function normalizeChildren (children: any): ?Array<VNode> {
-  return isPrimitive(children)
-    ? [createTextVNode(children)]
-    : Array.isArray(children)
-      ? normalizeArrayChildren(children)
-      : undefined
+  if (isPrimitive(children)) {
+    return [createTextVNode(children)]
+  }
+  if (Array.isArray(children)) {
+    return normalizeArrayChildren(children)
+  }
+  return undefined
 }
 
 function isTextNode (node): boolean {

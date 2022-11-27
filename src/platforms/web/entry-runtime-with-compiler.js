@@ -14,6 +14,8 @@ const idToTemplate = cached(id => {
   return el && el.innerHTML
 })
 
+// 将原始的$mount 存储起来，然后实现了新的$moute
+// 然后再调用$mount 就是在扩展原有的$mount 方法
 const mount = Vue.prototype.$mount
 Vue.prototype.$mount = function (
   el?: string | Element,
@@ -61,7 +63,7 @@ Vue.prototype.$mount = function (
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
-
+      // 这里就是 生成带有缓存功能的函数，该函数用 于生成虚拟DON
       const { render, staticRenderFns } = compileToFunctions(template, {
         shouldDecodeNewlines,
         delimiters: options.delimiters,
